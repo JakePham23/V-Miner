@@ -132,7 +132,7 @@ class BatchAnalyze:
                     for table_res_dict in tqdm(vi_tables, desc="LightOnOCR Table (vi)"):
                         bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
                         html_result = _lighton.recognize_table(bgr_image)
-                        if html_result and '<table' in html_result:
+                        if html_result and html_result.strip() != "" and '<table' in html_result:
                             table_res_dict["table_res"]["html"] = html_result
                             table_res_dict["lighton_processed"] = True
                         else:
