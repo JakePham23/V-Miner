@@ -324,6 +324,11 @@ class LightOnOCR:
         
         # Clean up response - ensure it's valid table HTML
         html = html.strip()
+        
+        # Nếu model trả về chuỗi rỗng / lỗi
+        if not html:
+            return ""
+            
         if not html.startswith("<table"):
             # Try to extract table from response
             if "<table>" in html:
