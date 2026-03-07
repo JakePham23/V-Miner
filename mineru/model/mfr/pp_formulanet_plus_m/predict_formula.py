@@ -136,6 +136,11 @@ class FormulaRecognizer(BaseOCRV20):
         images: list,
         batch_size: int = 64,
         interline_enable: bool = True,
+        self,
+        images_mfd_res: list,
+        images: list,
+        batch_size: int = 64,
+        interline_enable: bool = True,
     ) -> list:
         if not images_mfd_res:
             return []

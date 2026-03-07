@@ -665,6 +665,31 @@ def do_parse(
     # 预处理PDF字节数据
     pdf_bytes_list = _prepare_pdf_bytes(pdf_bytes_list, start_page_id, end_page_id)
 
+    # --- Vietnamese auto-routing ---
+    # Normalize vi-light-ocr alias to vi
+    p_lang_list = ['vi' if lang == 'vi-light-ocr' else lang for lang in p_lang_list]
+
+    # When backend is pipeline and lang is still the default 'ch' (user didn't specify -l),
+    # try to auto-detect Vietnamese text in the PDF. If found, switch to 'vi' pipeline.
+    if backend == 'pipeline':
+        updated_langs = []
+        for idx, (lang, pdf_bytes) in enumerate(zip(p_lang_list, pdf_bytes_list)):
+            if lang == 'ch':  # default: user didn't explicitly specify a language
+                try:
+                    from mineru.utils.vi_lang_detect import detect_vietnamese
+                    if detect_vietnamese(pdf_bytes):
+                        logger.info(f"[Auto-routing] Vietnamese text detected in document '{pdf_file_names[idx]}', switching to vi pipeline")
+                        updated_langs.append('vi')
+                    else:
+                        updated_langs.append(lang)
+                except Exception as _vi_err:
+                    logger.debug(f"Vi detect error: {_vi_err}")
+                    updated_langs.append(lang)
+            else:
+                updated_langs.append(lang)
+        p_lang_list = updated_langs
+    # --- end Vietnamese auto-routing ---
+
     if backend == "pipeline":
         _process_pipeline(
             output_dir, pdf_file_names, pdf_bytes_list, p_lang_list,

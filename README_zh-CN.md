@@ -79,9 +79,33 @@ MCP Server · LangChain / Dify / FastGPT 原生集成 · 10+ 国产算力适配 
 
 # 更新记录
 
+<<<<<<< HEAD
 - 2026/04/18 3.1.0 发布
 
   本次版本更新聚焦于**许可协议开放性、解析精度提升与全格式原生支持**。主要更新内容包括：
+=======
+- 2026/02/06 2.7.6 发布
+  - 新增国产算力平台昆仑芯、太初元碁的适配支持，目前已由官方和厂商适配并支持的国产算力平台包括:
+    - [昇腾 Ascend](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/Ascend) 
+    - [平头哥 T-Head](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/THead) 
+    - [沐曦 METAX](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/METAX) 
+    - [海光 Hygon](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/Hygon/)
+    - [燧原 Enflame](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/Enflame/)
+    - [摩尔线程 MooreThreads](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/MooreThreads/)
+    - [天数智芯 IluvatarCorex](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/IluvatarCorex/)
+    - [寒武纪 Cambricon](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/Cambricon/)
+    - [昆仑芯 Kunlunxin](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/Kunlunxin/)
+    - [太初元碁 Tecorigin](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/Tecorigin/)
+    - [壁仞 Biren](https://opendatalab.github.io/MinerU/zh/usage/acceleration_cards/Biren/)
+  - MinerU 持续兼容国产硬件平台，支持主流芯片架构。以安全可靠的技术，助力科研、政企用户迈向文档数字化新高度！
+
+- 2026/01/30 2.7.4 发布
+  - 新增国产算力平台天数智芯、寒武纪的适配支持。
+
+- 2026/01/23 2.7.2 发布
+  - 新增国产算力平台海光、燧原、摩尔线程的适配支持
+  - 跨页表合并优化，提升合并成功率与合并效果
+>>>>>>> 6b3f72a7 (feat(ocr): add custom algorithm to handle Vietnamese diacritics)
 
   - 许可协议升级
     - MinerU 已正式从 `AGPLv3` 切换至基于 `Apache 2.0` 的 [MinerU 开源许可证](https://github.com/opendatalab/MinerU/blob/master/LICENSE.md)。

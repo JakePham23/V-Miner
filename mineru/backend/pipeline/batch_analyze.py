@@ -458,6 +458,48 @@ class BatchAnalyze:
         # 表格识别 table recognition
         if self.table_enable:
 
+            # --- Vietnamese routing: split tables into LightOnOCR vs standard pipeline ---
+            def _is_vi_lang(lang: str) -> bool:
+                """Return True if lang is Vietnamese (vi or vi-*)."""
+                return lang is not None and (lang == 'vi' or lang.startswith('vi-'))
+
+            vi_tables = [t for t in table_res_list_all_page if _is_vi_lang(t.get('lang'))]
+            standard_tables = [t for t in table_res_list_all_page if not _is_vi_lang(t.get('lang'))]
+
+            # Process Vietnamese tables with LightOnOCR (LM Studio), fallback to PaddleOCR
+            if vi_tables:
+                _lighton_ok = False
+                try:
+                    import os as _os
+                    from mineru.model.ocr.lighton_ocr import LightOnOCR
+                    _lighton = LightOnOCR(
+                        server_url=_os.getenv('LIGHTON_SERVER_URL', 'http://localhost:1234/v1/chat/completions'),
+                        model_name=_os.getenv('LIGHTON_MODEL_NAME', 'lightonocr'),
+                    )
+                    for table_res_dict in tqdm(vi_tables, desc="LightOnOCR Table (vi)"):
+                        bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
+                        html_result = _lighton.recognize_table(bgr_image)
+                        if html_result and '<table' in html_result:
+                            table_res_dict["table_res"]["html"] = html_result
+                            table_res_dict["lighton_processed"] = True
+                        else:
+                            logger.warning("LightOnOCR returned empty HTML for a table, will use standard pipeline")
+                    _lighton_ok = True
+                except Exception as _e:
+                    logger.warning(f"LightOnOCR failed ({_e}), falling back to PaddleOCR for Vietnamese tables")
+
+                if not _lighton_ok:
+                    # Move unprocessed vi tables back to standard pipeline as fallback
+                    for t in vi_tables:
+                        if not t.get("lighton_processed"):
+                            standard_tables.append(t)
+
+            # From here on, work only with the standard (non-LightOnOCR) tables
+            table_res_list_all_page_standard = [
+                t for t in standard_tables + vi_tables
+                if not t.get("lighton_processed", False)
+            ]
+
             # 图片旋转批量处理
             table_orientation_cls_model = atom_model_manager.get_atom_model(
                 atom_model_name=AtomicModel.TableOrientationCls,
@@ -488,7 +530,7 @@ class BatchAnalyze:
                 atom_model_name=AtomicModel.TableCls,
             )
             try:
-                table_cls_model.batch_predict(table_res_list_all_page,
+                table_cls_model.batch_predict(table_res_list_all_page_standard,
                                               batch_size=TABLE_Wired_Wireless_CLS_BATCH_SIZE)
             except Exception as e:
                 logger.warning(
@@ -504,7 +546,7 @@ class BatchAnalyze:
                 enable_merge_det_boxes=False,
             )
             for index, table_res_dict in enumerate(
-                    tqdm(table_res_list_all_page, desc="Table-ocr det")
+                    tqdm(table_res_list_all_page_standard, desc="Table-ocr det")
             ):
                 bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
                 table_inline_objects = (
@@ -532,6 +574,7 @@ class BatchAnalyze:
                 if ocr_result:
                     ocr_result = sorted_boxes(ocr_result)
                 # 构造需要 OCR 识别的图片字典，包括cropped_img, dt_box, table_id，并按照语言进行分组
+                _tbl_lang = table_res_dict.get('lang', 'ch')
                 for dt_box in ocr_result:
                     rec_img_lang_group[table_res_dict["lang"]].append(
                         {
@@ -593,11 +636,11 @@ class BatchAnalyze:
             wireless_table_model = atom_model_manager.get_atom_model(
                 atom_model_name=AtomicModel.WirelessTable,
             )
-            wireless_table_model.batch_predict(table_res_list_all_page)
+            wireless_table_model.batch_predict(table_res_list_all_page_standard)
 
             # 单独拿出有线表格进行预测
             wired_table_res_list = []
-            for table_res_dict in table_res_list_all_page:
+            for table_res_dict in table_res_list_all_page_standard:
                 # logger.debug(f"Table classification result: {table_res_dict["table_res"]["cls_label"]} with confidence {table_res_dict["table_res"]["cls_score"]}")
                 if (
                     (table_res_dict["table_res"]["cls_label"] == AtomicModel.WirelessTable and table_res_dict["table_res"]["cls_score"] < 0.9)

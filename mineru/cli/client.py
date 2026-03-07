@@ -1074,6 +1074,10 @@ async def run_orchestrated_cli(
     Input the languages in the pdf (if known) to improve OCR accuracy.
     Without languages specified, 'ch' will be used by default.
     Adapted only for the case where the backend is set to 'pipeline' and 'hybrid-*'.
+
+    Vietnamese modes:
+      vi          : EasyOCR for text + LightOnOCR (LM Studio) for tables (recommended for Vietnamese PDFs)
+      vi-light-ocr: Alias for vi (same behavior)
     """,
 )
 @click.option(

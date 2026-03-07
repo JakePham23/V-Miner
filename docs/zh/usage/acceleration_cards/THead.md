@@ -125,6 +125,14 @@ docker run --privileged=true \
       <td>🟢</td>
       <td>🟢</td>
     </tr>
+<<<<<<< HEAD
+=======
+    <tr>
+      <td colspan="2">数据并行 (--data-parallel-size/--dp)</td>
+      <td>🔴</td>
+      <td>🔴</td>
+    </tr>
+>>>>>>> 6b3f72a7 (feat(ocr): add custom algorithm to handle Vietnamese diacritics)
   </tbody>
 </table>
 

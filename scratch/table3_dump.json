@@ -1,0 +1,57 @@
+{
+  "type": "table",
+  "bbox": [
+    74,
+    51,
+    571,
+    789
+  ],
+  "blocks": [
+    {
+      "type": "table_body",
+      "bbox": [
+        74,
+        51,
+        571,
+        789
+      ],
+      "group_id": 0,
+      "lines": [],
+      "index": 1,
+      "virtual_lines": [
+        {
+          "bbox": [
+            74,
+            51,
+            571,
+            297.0
+          ],
+          "spans": [],
+          "index": 0
+        },
+        {
+          "bbox": [
+            74,
+            297.0,
+            571,
+            543.0
+          ],
+          "spans": [],
+          "index": 1
+        },
+        {
+          "bbox": [
+            74,
+            543.0,
+            571,
+            789.0
+          ],
+          "spans": [],
+          "index": 2
+        }
+      ],
+      "lines_deleted": true
+    }
+  ],
+  "index": 1
+}
