@@ -27,6 +27,9 @@ def classify(pdf_bytes):
 
     # 从字节数据加载PDF
     sample_pdf_bytes = extract_pages(pdf_bytes)
+    if not sample_pdf_bytes:
+        return 'ocr'
+
     pdf = pdfium.PdfDocument(sample_pdf_bytes)
     try:
         # 获取PDF页数
@@ -39,18 +42,26 @@ def classify(pdf_bytes):
         # 检查的页面数（最多检查10页）
         pages_to_check = min(page_count, 10)
 
-        # 设置阈值：如果每页平均少于50个有效字符，认为需要OCR
-        chars_threshold = 50
+        # 获取平均每页清理后的字符数
+        avg_chars = get_avg_cleaned_chars_per_page(pdf, pages_to_check)
 
-        # 检查平均字符数和无效字符
-        if (get_avg_cleaned_chars_per_page(pdf, pages_to_check) < chars_threshold) or detect_invalid_chars(sample_pdf_bytes):
+        # Ngưỡng thấp hơn để ưu tiên Text PDF (Ví dụ: chỉ cần > 20 ký tự/trang là coi như có text layer)
+        chars_threshold = 20
+
+        # Nếu có đủ ký tự và không bị lỗi garbled text
+        if (avg_chars >= chars_threshold) and not detect_invalid_chars(sample_pdf_bytes):
+            # Kiểm tra thêm độ phủ ảnh, nếu không quá cao (ví dụ < 90%) thì vẫn ưu tiên TXT
+            coverage_ratio = get_high_image_coverage_ratio(sample_pdf_bytes, pages_to_check)
+            if coverage_ratio < 0.9:
+                logger.info(f"PDF Phân loại: TXT (Số ký tự: {avg_chars:.1f}, Độ phủ ảnh: {coverage_ratio:.2f})")
+                return 'txt'
+            else:
+                logger.info(f"PDF Phân loại: OCR (Lý do: Độ phủ hình ảnh cực cao {coverage_ratio:.2f})")
+                return 'ocr'
+        else:
+            reason = "Ít ký tự" if avg_chars < chars_threshold else "Lỗi font/văn bản"
+            logger.info(f"PDF Phân loại: OCR (Lý do: {reason})")
             return 'ocr'
-
-        # 检查图像覆盖率
-        if get_high_image_coverage_ratio(sample_pdf_bytes, pages_to_check) >= 0.8:
-            return 'ocr'
-
-        return 'txt'
 
     except Exception as e:
         logger.error(f"判断PDF类型时出错: {e}")
@@ -60,6 +71,7 @@ def classify(pdf_bytes):
     finally:
         # 无论执行哪个路径，都确保PDF被关闭
         pdf.close()
+
 
 
 def get_avg_cleaned_chars_per_page(pdf_doc, pages_to_check):

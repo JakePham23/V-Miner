@@ -55,5 +55,12 @@ export LIGHTON_API_TYPE="openai"                                      # Loại A
 ## ❓ Câu hỏi thường gặp
 - **Hỏi**: Tại sao kết quả ra tiếng Việt bị mất dấu?
   - **Đáp**: Hãy chắc chắn bạn đã truyền `-b pipeline -l vi` (để gọi EasyOCR) thay vì chạy backend mặc định (`hybrid-auto-engine` dùng VLM Qwen đôi khi không rành tiếng Việt).
-- **Hỏi**: Không có LM Studio thì sao?
-  - **Đáp**: Bảng biểu sẽ dùng mô hình mặc định. Chỉ phần text thường mới dùng EasyOCR.
+---
+
+## 👥 Đội ngũ thực hiện & Đóng góp
+
+Phiên bản tối ưu hóa MinerU cho Tiếng Việt này được thực hiện bởi sự cộng tác giữa:
+- **Người dùng (User):** Định hướng kiến trúc, cung cấp yêu cầu nghiệp vụ và tích hợp các công nghệ OCR chuyên sâu (EasyOCR, LightOnOCR).
+- **Gemini CLI (AI Assistant):** Hỗ trợ lập trình, thực thi các thay đổi mã nguồn, tối ưu hóa logic phân loại PDF và điều phối luồng xử lý (pipeline).
+
+Chúng tôi cùng nhau tạo ra một công cụ mạnh mẽ hơn để xử lý tài liệu Tiếng Việt một cách tự động và chính xác.

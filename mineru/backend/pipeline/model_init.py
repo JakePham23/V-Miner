@@ -42,10 +42,13 @@ def img_orientation_cls_model_init():
 
 
 def table_cls_model_init():
+    table_backend = os.getenv('MINERU_TABLE_BACKEND', 'paddle').lower()
+    if table_backend == 'lighton':
+        logger.info("Using LightOn backend for Table Classification")
     return PaddleTableClsModel()
 
-
 def wired_table_model_init(lang=None):
+    table_backend = os.getenv('MINERU_TABLE_BACKEND', 'paddle').lower()
     atom_model_manager = AtomModelSingleton()
     ocr_engine = atom_model_manager.get_atom_model(
         atom_model_name=AtomicModel.OCR,
@@ -54,6 +57,10 @@ def wired_table_model_init(lang=None):
         lang=lang,
         enable_merge_det_boxes=False
     )
+    if table_backend == 'lighton' and lang and lang.startswith('vi'):
+        logger.info("Using LightOn backend for Wired Table recognition (Vietnamese)")
+        # LightOnOCR logic is handled in batch_analyze.py, 
+        # but we initialize the default here as fallback
     table_model = UnetTableModel(ocr_engine)
     return table_model
 
@@ -100,15 +107,115 @@ def ocr_model_init(det_db_box_thresh=0.3,
                    det_db_unclip_ratio=1.8,
                    enable_merge_det_boxes=True
                    ):
-    if lang is not None and (lang == 'vi' or lang.startswith('vi-')):
-        from mineru.model.ocr.easy_ocr import EasyOCR
-        logger.info(f"Initializing EasyOCR for language: {lang}")
-        model = EasyOCR(
-            lang=lang,
-            det_db_box_thresh=det_db_box_thresh,
-            det_db_unclip_ratio=det_db_unclip_ratio
+    """
+    Initialize OCR model based on language.
+    
+    Supports multiple OCR backends:
+    - vi: EasyOCR (better Vietnamese support)
+    - vi-vision: Apple Vision Framework (macOS only, high accuracy)
+    - vi-light-ocr: LightOnOCR via LM Studio (best for tables)
+    - vi-paddle-ocr: Original PaddleOCR for Vietnamese
+    - others: PaddleOCR (default)
+    """
+    # Route to appropriate OCR backend
+    if lang == 'vi-light-ocr':
+        # Hybrid: EasyOCR for text + LightOnOCR for tables (via LM Studio)
+        from mineru.model.ocr.hybrid_light_ocr import HybridLightOCR
+        logger.info("Using Hybrid OCR backend (EasyOCR + LightOnOCR) for Vietnamese")
+        return HybridLightOCR()
+    
+    elif lang == 'vi-vision-light':
+        # Hybrid: Vision Framework for text + LightOnOCR for tables
+        import sys
+        if sys.platform != 'darwin':
+            logger.warning(f"vi-vision-light mode requires macOS, falling back to vi-light-ocr")
+            from mineru.model.ocr.hybrid_light_ocr import HybridLightOCR
+            return HybridLightOCR()
+        
+        from mineru.model.ocr.hybrid_vision_light_ocr import HybridVisionLightOCR
+        logger.info("Using Hybrid OCR backend (Vision Framework + LightOnOCR) for Vietnamese")
+        return HybridVisionLightOCR()
+    
+    elif lang == 'vi-hybrid':
+        # Custom hybrid OCR via environment variables
+        import sys
+        primary_ocr = os.getenv('PRIMARY_OCR', 'easyocr').lower()
+        table_ocr = os.getenv('TABLE_OCR', 'lighton').lower()
+        
+        logger.info(f"Using Custom Hybrid OCR: PRIMARY_OCR={primary_ocr}, TABLE_OCR={table_ocr}")
+        
+        if primary_ocr == 'vision':
+            # Vision + LightOnOCR
+            if sys.platform != 'darwin':
+                logger.warning("Vision OCR requires macOS, falling back to EasyOCR")
+                primary_ocr = 'easyocr'
+            else:
+                from mineru.model.ocr.hybrid_vision_light_ocr import HybridVisionLightOCR
+                return HybridVisionLightOCR()
+        
+        # Default: EasyOCR + LightOnOCR
+        from mineru.model.ocr.hybrid_light_ocr import HybridLightOCR
+        return HybridLightOCR()
+    
+    elif lang == 'vi-custom':
+        # Configurable hybrid OCR with flexible backend selection for ALL content types.
+        # Defaults: easyocr for all - works offline, no server needed.
+        # Override via env variables:
+        #   MINERU_TEXT_BACKEND=paddle|easyocr|vision (macOS only)
+        #   MINERU_TABLE_BACKEND=paddle|easyocr|vision|lighton (lighton needs LM Studio)
+        #   MINERU_IMAGE_BACKEND=paddle|easyocr|vision|lighton (lighton needs LM Studio)
+        text_backend = os.getenv('MINERU_TEXT_BACKEND', 'easyocr').lower()
+        table_backend = os.getenv('MINERU_TABLE_BACKEND', 'rapidtable').lower()
+        image_backend = os.getenv('MINERU_IMAGE_BACKEND', 'paddle').lower()
+        
+        logger.info(
+            f"Using Configurable Hybrid OCR: "
+            f"text={text_backend}, table={table_backend}, image={image_backend}"
         )
+        
+        from mineru.model.ocr.configurable_hybrid_ocr import ConfigurableHybridOCR
+        return ConfigurableHybridOCR(
+            text_backend=text_backend,
+            table_backend=table_backend,
+            image_backend=image_backend,
+            det_db_box_thresh=det_db_box_thresh,
+            det_db_unclip_ratio=det_db_unclip_ratio,
+        )
+    
+    elif lang == 'vi-vision':
+
+        # Apple Vision Framework (macOS only)
+        import sys
+        if sys.platform != 'darwin':
+            logger.warning(f"vi-vision mode requires macOS, falling back to EasyOCR")
+            from mineru.model.ocr.easy_ocr import EasyOCR
+            return EasyOCR(lang='vi')
+        
+        from mineru.model.ocr.vision_ocr import VisionFrameworkOCR
+        logger.info("Using Apple Vision Framework for Vietnamese OCR")
+        return VisionFrameworkOCR()
+
+    
+    elif lang in ['vi', 'vietnamese', 'vie']:
+        # EasyOCR for Vietnamese
+        from mineru.model.ocr.easy_ocr import EasyOCR
+        logger.info("Using EasyOCR backend for Vietnamese")
+        return EasyOCR(lang='vi')
+    
+    elif lang == 'vi-paddle-ocr':
+        # Original PaddleOCR for Vietnamese (fallback option)
+        logger.info("Using PaddleOCR backend for Vietnamese")
+        model = PytorchPaddleOCR(
+            det_db_box_thresh=det_db_box_thresh,
+            lang='vi',  # Map to PaddleOCR's Vietnamese support
+            use_dilation=True,
+            det_db_unclip_ratio=det_db_unclip_ratio,
+            enable_merge_det_boxes=enable_merge_det_boxes,
+        )
+        return model
+    
     elif lang is not None and lang != '':
+        # PaddleOCR for other languages
         model = PytorchPaddleOCR(
             det_db_box_thresh=det_db_box_thresh,
             lang=lang,
@@ -117,6 +224,7 @@ def ocr_model_init(det_db_box_thresh=0.3,
             enable_merge_det_boxes=enable_merge_det_boxes,
         )
     else:
+        # Default PaddleOCR
         model = PytorchPaddleOCR(
             det_db_box_thresh=det_db_box_thresh,
             use_dilation=True,
@@ -124,6 +232,7 @@ def ocr_model_init(det_db_box_thresh=0.3,
             enable_merge_det_boxes=enable_merge_det_boxes,
         )
     return model
+
 
 
 class AtomModelSingleton:

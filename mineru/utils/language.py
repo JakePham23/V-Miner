@@ -24,6 +24,15 @@ def detect_lang(text: str) -> str:
 
     text = text.replace("\n", "")
     text = remove_invalid_surrogates(text)
+    
+    # Kiểm tra ký tự đặc trưng Tiếng Việt sớm
+    vietnamese_markers = "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđĐ"
+    # Đếm số lượng ký tự có dấu/ký tự Đ
+    vi_marker_count = sum(1 for char in text if char in vietnamese_markers)
+    if vi_marker_count > 0:
+        # Nếu có từ 3 ký tự có dấu trở lên trong mẫu (hoặc tỉ lệ nhất định), ưu tiên chọn vi
+        if vi_marker_count >= 2 or (len(text) > 0 and vi_marker_count / len(text) > 0.05):
+            return "vi"
 
     # print(text)
     try:

@@ -188,6 +188,64 @@ def _process_pipeline(
     """处理pipeline后端逻辑"""
     from mineru.backend.pipeline.model_json_to_middle_json import result_to_middle_json as pipeline_result_to_middle_json
     from mineru.backend.pipeline.pipeline_analyze import doc_analyze as pipeline_doc_analyze
+    from mineru.utils.language import detect_lang
+    import pypdfium2 as pdfium
+
+    # Tự động nhận diện ngôn ngữ nếu truyền vào là 'auto'
+    new_lang_list = []
+    for idx, (lang, pdf_bytes) in enumerate(zip(p_lang_list, pdf_bytes_list)):
+        if lang == 'auto':
+            try:
+                pdf = pdfium.PdfDocument(pdf_bytes)
+                sample_text = ""
+                # 1. Thử đọc từ text layer trước (nhanh nhất)
+                for i in range(min(len(pdf), 5)):
+                    sample_text += pdf[i].get_textpage().get_text_bounded()
+                
+                # 2. Nếu không có text layer (là ảnh/scan), thực hiện OCR nhanh trang 1
+                if len(sample_text.strip()) < 10 and len(pdf) > 0:
+                    logger.info(f"File {idx} không có text layer, đang quét OCR nhanh để nhận diện ngôn ngữ...")
+                    from mineru.utils.pdf_image_tools import load_images_from_pdf
+                    from mineru.utils.enum_class import ImageType
+                    images, _ = load_images_from_pdf(pdf_bytes, image_type=ImageType.PIL, start_page_id=0, end_page_id=0)
+                    if images:
+                        import cv2
+                        import numpy as np
+                        from mineru.backend.pipeline.model_init import AtomModelSingleton, AtomicModel
+                        
+                        # Sử dụng OCR mặc định (ch_lite) để lấy mẫu ký tự
+                        atom_model_manager = AtomModelSingleton()
+                        ocr_engine = atom_model_manager.get_atom_model(atom_model_name=AtomicModel.OCR, lang="ch_lite")
+                        
+                        pil_img = images[0]['img_pil']
+                        cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+                        ocr_res = ocr_engine.ocr(cv_img, det=True, rec=True)[0]
+                        if ocr_res:
+                            sample_text = " ".join([line[1][0] for line in ocr_res])
+
+                pdf.close()
+                detected = detect_lang(sample_text)
+                
+                # Bổ sung kiểm tra ký tự đặc trưng Tiếng Việt để tránh nhầm lẫn với 'en'
+                vietnamese_markers = "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđĐ"
+                has_vi_markers = any(char in sample_text for char in vietnamese_markers)
+                
+                if has_vi_markers:
+                    if detected != 'vi':
+                        logger.info(f"Phát hiện ký tự Tiếng Việt, ghi đè ngôn ngữ từ '{detected}' sang 'vi'")
+                    detected = 'vi'
+                
+                if not detected:
+                    detected = 'ch'
+                logger.info(f"Auto-detected language for file {idx}: {detected}")
+                new_lang_list.append(detected)
+            except Exception as e:
+                logger.error(f"Auto-detection failed for file {idx}: {e}")
+                new_lang_list.append('ch')
+        else:
+            new_lang_list.append(lang)
+    
+    p_lang_list = new_lang_list
 
     infer_results, all_image_lists, all_pdf_docs, lang_list, ocr_enabled_list = (
         pipeline_doc_analyze(
@@ -428,38 +486,18 @@ def do_parse(
         f_dump_model_output=True,
         f_dump_orig_pdf=True,
         f_dump_content_list=True,
+        f_draw_line_sort_bbox=False,
         f_make_md_mode=MakeMode.MM_MD,
         start_page_id=0,
         end_page_id=None,
         **kwargs,
 ):
+    # Mặc định sử dụng pipeline nếu không có yêu cầu cụ thể khác
+    if not backend or backend == "auto":
+        backend = "pipeline"
+        
     # 预处理PDF字节数据
     pdf_bytes_list = _prepare_pdf_bytes(pdf_bytes_list, start_page_id, end_page_id)
-
-    # --- Vietnamese auto-routing ---
-    # Normalize vi-light-ocr alias to vi
-    p_lang_list = ['vi' if lang == 'vi-light-ocr' else lang for lang in p_lang_list]
-
-    # When backend is pipeline and lang is still the default 'ch' (user didn't specify -l),
-    # try to auto-detect Vietnamese text in the PDF. If found, switch to 'vi' pipeline.
-    if backend == 'pipeline':
-        updated_langs = []
-        for idx, (lang, pdf_bytes) in enumerate(zip(p_lang_list, pdf_bytes_list)):
-            if lang == 'ch':  # default: user didn't explicitly specify a language
-                try:
-                    from mineru.utils.vi_lang_detect import detect_vietnamese
-                    if detect_vietnamese(pdf_bytes):
-                        logger.info(f"[Auto-routing] Vietnamese text detected in document '{pdf_file_names[idx]}', switching to vi pipeline")
-                        updated_langs.append('vi')
-                    else:
-                        updated_langs.append(lang)
-                except Exception as _vi_err:
-                    logger.debug(f"Vi detect error: {_vi_err}")
-                    updated_langs.append(lang)
-            else:
-                updated_langs.append(lang)
-        p_lang_list = updated_langs
-    # --- end Vietnamese auto-routing ---
 
     if backend == "pipeline":
         _process_pipeline(
@@ -469,18 +507,16 @@ def do_parse(
             f_dump_model_output, f_dump_orig_pdf, f_dump_content_list, f_make_md_mode
         )
     else:
+        # Nếu yêu cầu backend khác (hybrid, vlm), xử lý như cũ
         if backend.startswith("vlm-"):
             backend = backend[4:]
-
             if backend == "vllm-async-engine":
                 raise Exception("vlm-vllm-async-engine backend is not supported in sync mode, please use vlm-vllm-engine backend")
-
             if backend == "auto-engine":
+                from mineru.utils.engine_utils import get_vlm_engine
                 backend = get_vlm_engine(inference_engine='auto', is_async=False)
-
             os.environ['MINERU_VLM_FORMULA_ENABLE'] = str(formula_enable)
             os.environ['MINERU_VLM_TABLE_ENABLE'] = str(table_enable)
-
             _process_vlm(
                 output_dir, pdf_file_names, pdf_bytes_list, backend,
                 f_draw_layout_bbox, f_draw_span_bbox, f_dump_md, f_dump_middle_json,
@@ -489,17 +525,13 @@ def do_parse(
             )
         elif backend.startswith("hybrid-"):
             backend = backend[7:]
-
             if backend == "vllm-async-engine":
-                raise Exception(
-                    "hybrid-vllm-async-engine backend is not supported in sync mode, please use hybrid-vllm-engine backend")
-
+                raise Exception("hybrid-vllm-async-engine backend is not supported in sync mode, please use hybrid-vllm-engine backend")
             if backend == "auto-engine":
+                from mineru.utils.engine_utils import get_vlm_engine
                 backend = get_vlm_engine(inference_engine='auto', is_async=False)
-
             os.environ['MINERU_VLM_TABLE_ENABLE'] = str(table_enable)
             os.environ['MINERU_VLM_FORMULA_ENABLE'] = "true"
-
             _process_hybrid(
                 output_dir, pdf_file_names, pdf_bytes_list, p_lang_list, parse_method, formula_enable, backend,
                 f_draw_layout_bbox, f_draw_span_bbox, f_dump_md, f_dump_middle_json,
@@ -530,6 +562,10 @@ async def aio_do_parse(
         end_page_id=None,
         **kwargs,
 ):
+    # Mặc định sử dụng pipeline nếu không có yêu cầu cụ thể khác
+    if not backend or backend == "auto":
+        backend = "pipeline"
+
     # 预处理PDF字节数据
     pdf_bytes_list = _prepare_pdf_bytes(pdf_bytes_list, start_page_id, end_page_id)
 
@@ -542,18 +578,16 @@ async def aio_do_parse(
             f_dump_model_output, f_dump_orig_pdf, f_dump_content_list, f_make_md_mode
         )
     else:
+        # Nếu yêu cầu backend khác (hybrid, vlm), xử lý như cũ
         if backend.startswith("vlm-"):
             backend = backend[4:]
-
             if backend == "vllm-engine":
                 raise Exception("vlm-vllm-engine backend is not supported in async mode, please use vlm-vllm-async-engine backend")
-
             if backend == "auto-engine":
+                from mineru.utils.engine_utils import get_vlm_engine
                 backend = get_vlm_engine(inference_engine='auto', is_async=True)
-
             os.environ['MINERU_VLM_FORMULA_ENABLE'] = str(formula_enable)
             os.environ['MINERU_VLM_TABLE_ENABLE'] = str(table_enable)
-
             await _async_process_vlm(
                 output_dir, pdf_file_names, pdf_bytes_list, backend,
                 f_draw_layout_bbox, f_draw_span_bbox, f_dump_md, f_dump_middle_json,
@@ -562,16 +596,13 @@ async def aio_do_parse(
             )
         elif backend.startswith("hybrid-"):
             backend = backend[7:]
-
             if backend == "vllm-engine":
                 raise Exception("hybrid-vllm-engine backend is not supported in async mode, please use hybrid-vllm-async-engine backend")
-
             if backend == "auto-engine":
+                from mineru.utils.engine_utils import get_vlm_engine
                 backend = get_vlm_engine(inference_engine='auto', is_async=True)
-
             os.environ['MINERU_VLM_TABLE_ENABLE'] = str(table_enable)
             os.environ['MINERU_VLM_FORMULA_ENABLE'] = "true"
-
             await _async_process_hybrid(
                 output_dir, pdf_file_names, pdf_bytes_list, p_lang_list, parse_method, formula_enable, backend,
                 f_draw_layout_bbox, f_draw_span_bbox, f_dump_md, f_dump_middle_json,

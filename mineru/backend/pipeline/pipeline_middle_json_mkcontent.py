@@ -63,6 +63,7 @@ def make_blocks_to_markdown(paras_of_layout,
             if mode == MakeMode.NLP_MD:
                 continue
             elif mode == MakeMode.MM_MD:
+                from mineru.utils.format_utils import html_table_to_markdown
                 for block in para_block['blocks']:  # 1st.拼table_caption
                     if block['type'] == BlockType.TABLE_CAPTION:
                         para_text += merge_para_with_text(block) + '  \n'
@@ -73,7 +74,7 @@ def make_blocks_to_markdown(paras_of_layout,
                                 if span['type'] == ContentType.TABLE:
                                     # if processed by table model
                                     if span.get('html', ''):
-                                        para_text += f"\n{span['html']}\n"
+                                        para_text += f"\n{html_table_to_markdown(span['html'])}\n"
                                     elif span.get('image_path', ''):
                                         para_text += f"![]({img_buket_path}/{span['image_path']})"
                 for block in para_block['blocks']:  # 3rd.拼table_footnote

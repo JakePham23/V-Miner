@@ -18,6 +18,7 @@ from ..version import __version__
 from .common import do_parse, read_fn, pdf_suffixes, image_suffixes
 
 
+
 @click.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True))
 @click.pass_context
 @click.version_option(__version__,
@@ -61,13 +62,13 @@ from .common import do_parse, read_fn, pdf_suffixes, image_suffixes
     type=click.Choice(['pipeline', 'vlm-http-client', 'hybrid-http-client', 'vlm-auto-engine', 'hybrid-auto-engine',]),
     help="""\b
     the backend for parsing pdf:
-      pipeline: More general.
+      pipeline: More general (default for Vietnamese).
       vlm-auto-engine: High accuracy via local computing power.
       vlm-http-client: High accuracy via remote computing power(client suitable for openai-compatible servers).
       hybrid-auto-engine: Next-generation high accuracy solution via local computing power.
       hybrid-http-client: High accuracy but requires a little local computing power(client suitable for openai-compatible servers).
-    Without method specified, hybrid-auto-engine will be used by default.""",
-    default='hybrid-auto-engine',
+    Default: pipeline.""",
+    default='pipeline',
 )
 @click.option(
     '-l',
@@ -75,18 +76,30 @@ from .common import do_parse, read_fn, pdf_suffixes, image_suffixes
     'lang',
     type=click.Choice(['ch', 'ch_server', 'ch_lite', 'en', 'korean', 'japan', 'chinese_cht', 'ta', 'te', 'ka', 'th', 'el',
                        'latin', 'arabic', 'east_slavic', 'cyrillic', 'devanagari',
-                       'vi', 'vi-light-ocr']),
+                       'vi', 'vi-vision', 'vi-paddle-ocr', 'vi-light-ocr', 'vi-vision-light', 'vi-hybrid', 'vi-custom']),
     help="""
     Input the languages in the pdf (if known) to improve OCR accuracy.
-    Without languages specified, 'ch' will be used by default.
-    Adapted only for the case where the backend is set to 'pipeline' and 'hybrid-*'.
+    Default: vi-custom (Vietnamese - fully customizable).
 
-    Vietnamese modes:
-      vi          : EasyOCR for text + LightOnOCR (LM Studio) for tables (recommended for Vietnamese PDFs)
-      vi-light-ocr: Alias for vi (same behavior)
-    """,
-    default='ch',
+    Vietnamese OCR modes (recommended):
+      vi-custom: FULLY CUSTOMIZABLE via env vars (default)
+        Set MINERU_TEXT_BACKEND=easyocr|paddle|vision (default: easyocr)
+        Set MINERU_TABLE_BACKEND=lighton|easyocr|paddle|vision (default: easyocr)
+        Set MINERU_IMAGE_BACKEND=lighton|easyocr|paddle|vision (default: easyocr)
+      vi: EasyOCR (simple, good Vietnamese support)
+      vi-vision: Apple Vision Framework (macOS only, high accuracy)
+      vi-paddle-ocr: Original PaddleOCR for Vietnamese
+      vi-light-ocr: EasyOCR + LightOnOCR for tables
+      vi-vision-light: Vision + LightOnOCR (BEST for macOS)
+      vi-hybrid: Custom hybrid via env PRIMARY_OCR / TABLE_OCR
+
+    Other languages: ch, ch_server, ch_lite, en, korean, japan, etc.
+
+    Adapted only for the case where the backend is set to 'pipeline' and 'hybrid-'.""",
+    default='vi-custom',
 )
+
+
 @click.option(
     '-u',
     '--url',

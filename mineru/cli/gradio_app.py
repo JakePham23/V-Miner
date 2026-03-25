@@ -110,26 +110,34 @@ def replace_image_with_base64(markdown_text, image_dir_path):
 
 
 async def to_markdown(file_path, end_pages=10, is_ocr=False, formula_enable=True, table_enable=True, language="ch", backend="pipeline", url=None):
-    # 如果language包含()，则提取括号前的内容作为实际语言
-    if '(' in language and ')' in language:
-        language = language.split('(')[0].strip()
-    file_path = to_pdf(file_path)
-    # 获取识别的md文件以及压缩包文件路径
-    local_md_dir, file_name = await parse_pdf(file_path, './output', end_pages - 1, is_ocr, formula_enable, table_enable, language, backend, url)
-    archive_zip_path = os.path.join('./output', str_sha256(local_md_dir) + '.zip')
-    zip_archive_success = compress_directory_to_zip(local_md_dir, archive_zip_path)
-    if zip_archive_success == 0:
-        logger.info('Compression successful')
-    else:
-        logger.error('Compression failed')
-    md_path = os.path.join(local_md_dir, file_name + '.md')
-    with open(md_path, 'r', encoding='utf-8') as f:
-        txt_content = f.read()
-    md_content = replace_image_with_base64(txt_content, local_md_dir)
-    # 返回转换后的PDF路径
-    new_pdf_path = os.path.join(local_md_dir, file_name + '_layout.pdf')
+    from mineru.utils.model_utils import clean_vram
+    from mineru.utils.config_reader import get_device
 
-    return md_content, txt_content, archive_zip_path, new_pdf_path
+    try:
+        # 如果language包含()，则提取括号前的内容作为实际语言
+        if '(' in language and ')' in language:
+            language = language.split('(')[0].strip()
+        file_path = to_pdf(file_path)
+        # 获取识别的md文件以及压缩包文件路径
+        local_md_dir, file_name = await parse_pdf(file_path, './output', end_pages - 1, is_ocr, formula_enable, table_enable, language, backend, url)
+        archive_zip_path = os.path.join('./output', str_sha256(local_md_dir) + '.zip')
+        zip_archive_success = compress_directory_to_zip(local_md_dir, archive_zip_path)
+        if zip_archive_success == 0:
+            logger.info('Compression successful')
+        else:
+            logger.error('Compression failed')
+        md_path = os.path.join(local_md_dir, file_name + '.md')
+        with open(md_path, 'r', encoding='utf-8') as f:
+            txt_content = f.read()
+        md_content = replace_image_with_base64(txt_content, local_md_dir)
+        # 返回转换后的PDF路径
+        new_pdf_path = os.path.join(local_md_dir, file_name + '_layout.pdf')
+
+        return md_content, txt_content, archive_zip_path, new_pdf_path
+    finally:
+        # Chờ một chút để giải phóng RAM/VRAM sau khi xử lý xong (dù thành công hay thất bại)
+        logger.info("Hoàn tất tác vụ, đang giải phóng tài nguyên (RAM/VRAM)...")
+        clean_vram(get_device(), vram_threshold=0) # Ép giải phóng ngay lập tức
 
 
 latex_delimiters_type_a = [
@@ -146,6 +154,9 @@ header_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resource
 with open(header_path, mode='r', encoding='utf-8') as header_file:
     header = header_file.read()
 
+vi_lang = [
+    'vi (Vietnamese)',
+]
 other_lang = [
     'ch (Chinese, English, Chinese Traditional)',
     'ch_lite (Chinese, English, Chinese Traditional, Japanese)',
@@ -167,33 +178,37 @@ add_lang = [
     'cyrillic (Russian, Belarusian, Ukrainian, Serbian (Cyrillic), Bulgarian, Mongolian, Abkhazian, Adyghe, Kabardian, Avar, Dargin, Ingush, Chechen, Lak, Lezgin, Tabasaran, Kazakh, Kyrgyz, Tajik, Macedonian, Tatar, Chuvash, Bashkir, Malian, Moldovan, Udmurt, Komi, Ossetian, Buryat, Kalmyk, Tuvan, Sakha, Karakalpak, English)',
     'devanagari (Hindi, Marathi, Nepali, Bihari, Maithili, Angika, Bhojpuri, Magahi, Santali, Newari, Konkani, Sanskrit, Haryanvi, English)'
 ]
-all_lang = [*other_lang, *add_lang]
+all_lang = ['auto (Auto Detection)', *vi_lang, *other_lang, *add_lang]
 
 
 def safe_stem(file_path):
+    if not file_path:
+        return "file"
     stem = Path(file_path).stem
     # 只保留字母、数字、下划线和点，其他字符替换为下划线
     return re.sub(r'[^\w.]', '_', stem)
 
 
 def to_pdf(file_path):
-
     if file_path is None:
         return None
 
-    pdf_bytes = read_fn(file_path)
+    # Nếu đã là file PDF thì trả về đường dẫn luôn, tránh ghi đè hoặc convert thừa
+    if str(file_path).lower().endswith('.pdf'):
+        return file_path
 
-    # unique_filename = f'{uuid.uuid4()}.pdf'
-    unique_filename = f'{safe_stem(file_path)}.pdf'
-
-    # 构建完整的文件路径
-    tmp_file_path = os.path.join(os.path.dirname(file_path), unique_filename)
-
-    # 将字节数据写入文件
-    with open(tmp_file_path, 'wb') as tmp_pdf_file:
-        tmp_pdf_file.write(pdf_bytes)
-
-    return tmp_file_path
+    try:
+        pdf_bytes = read_fn(file_path)
+        unique_filename = f'{safe_stem(file_path)}.pdf'
+        # Lưu vào thư mục tạm của hệ thống hoặc cùng thư mục với file gốc
+        tmp_file_path = os.path.join(os.path.dirname(file_path), unique_filename)
+        
+        with open(tmp_file_path, 'wb') as tmp_pdf_file:
+            tmp_pdf_file.write(pdf_bytes)
+        return tmp_file_path
+    except Exception as e:
+        logger.error(f"Error converting to PDF for preview: {e}")
+        return file_path
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True))
@@ -285,7 +300,7 @@ def main(ctx,
             "md_rendering": "Markdown rendering",
             "md_text": "Markdown text",
             "backend_info_vlm": "High-precision parsing via VLM, supports Chinese and English documents only.",
-            "backend_info_pipeline": "Traditional Multi-model pipeline parsing, supports multiple languages, hallucination-free.",
+            "backend_info_pipeline": "Traditional Multi-model pipeline parsing. Optimized for Vietnamese (Auto-routing to LightOnOCR for scans).",
             "backend_info_hybrid": "High-precision hybrid parsing, supports multiple languages.",
             "backend_info_default": "Select the backend engine for document parsing.",
         },
@@ -319,6 +334,37 @@ def main(ctx,
             "backend_info_pipeline": "传统多模型管道解析，支持多语言，无幻觉。",
             "backend_info_hybrid": "高精度混合解析，支持多语言。",
             "backend_info_default": "选择文档解析的后端引擎。",
+        },
+        vi={
+            "upload_file": "Vui lòng tải lên PDF hoặc ảnh",
+            "max_pages": "Số trang tối đa",
+            "backend": "Backend xử lý",
+            "server_url": "URL máy chủ",
+            "server_url_info": "URL máy chủ tương thích OpenAI cho backend http-client.",
+            "recognition_options": "**Tùy chọn nhận diện:**",
+            "table_enable": "Bật nhận diện bảng",
+            "table_info": "Khi tắt, bảng sẽ hiển thị dưới dạng ảnh.",
+            "formula_label_vlm": "Bật nhận diện công thức hiển thị",
+            "formula_label_pipeline": "Bật nhận diện công thức",
+            "formula_label_hybrid": "Bật nhận diện công thức nội tuyến",
+            "formula_info_vlm": "Khi tắt, công thức hiển thị sẽ hiện dưới dạng ảnh.",
+            "formula_info_pipeline": "Khi tắt, công thức hiển thị sẽ hiện dưới dạng ảnh, công thức nội tuyến sẽ không được xử lý.",
+            "formula_info_hybrid": "Khi tắt, công thức nội tuyến sẽ không được phát hiện hay xử lý.",
+            "ocr_language": "Ngôn ngữ OCR",
+            "ocr_language_info": "Chọn ngôn ngữ OCR cho PDF scan và ảnh.",
+            "force_ocr": "Bắt buộc dùng OCR",
+            "force_ocr_info": "Chỉ bật khi kết quả rất kém. Cần chọn đúng ngôn ngữ.",
+            "convert": "Chuyển đổi",
+            "clear": "Xóa",
+            "pdf_preview": "Xem trước PDF",
+            "examples": "Ví dụ:",
+            "convert_result": "Kết quả chuyển đổi",
+            "md_rendering": "Xem Markdown",
+            "md_text": "Văn bản Markdown",
+            "backend_info_vlm": "Phân tích chính xác cao qua VLM, chỉ hỗ trợ tài liệu Trung-Anh.",
+            "backend_info_pipeline": "Pipeline đa mô hình truyền thống. Tối ưu cho Tiếng Việt (Tự động gọi LightOnOCR cho bản scan).",
+            "backend_info_hybrid": "Phân tích hybrid độ chính xác cao, hỗ trợ nhiều ngôn ngữ.",
+            "backend_info_default": "Chọn backend xử lý tài liệu.",
         },
     )
 
@@ -409,19 +455,19 @@ def main(ctx,
                     max_pages = gr.Slider(1, max_convert_pages, max_convert_pages, step=1, label=i18n("max_pages"))
                 with gr.Row():
                     drop_list = ["pipeline", "vlm-auto-engine", "hybrid-auto-engine"]
-                    preferred_option = "hybrid-auto-engine"
+                    preferred_option = "pipeline"
                     if http_client_enable:
                         drop_list.extend(["vlm-http-client", "hybrid-http-client"])
                     backend = gr.Dropdown(drop_list, label=i18n("backend"), value=preferred_option, info=get_backend_info(preferred_option))
                 with gr.Row(visible=False) as client_options:
-                    url = gr.Textbox(label=i18n("server_url"), value='http://localhost:30000', placeholder='http://localhost:30000', info=i18n("server_url_info"))
+                    url = gr.Textbox(label=i18n("server_url"), value='http://localhost:1234/v1/chat/completions', placeholder='http://localhost:1234/v1/chat/completions', info=i18n("server_url_info"))
                 with gr.Row(equal_height=True):
                     with gr.Column():
                         gr.Markdown(i18n("recognition_options"))
                         table_enable = gr.Checkbox(label=i18n("table_enable"), value=True, info=i18n("table_info"))
                         formula_enable = gr.Checkbox(label=get_formula_label(preferred_option), value=True, info=get_formula_info(preferred_option))
                     with gr.Column(visible=False) as ocr_options:
-                        language = gr.Dropdown(all_lang, label=i18n("ocr_language"), value='ch (Chinese, English, Chinese Traditional)', info=i18n("ocr_language_info"))
+                        language = gr.Dropdown(all_lang, label=i18n("ocr_language"), value='vi (Vietnamese)', info=i18n("ocr_language_info"))
                         is_ocr = gr.Checkbox(label=i18n("force_ocr"), value=False, info=i18n("force_ocr_info"))
                 with gr.Row():
                     change_bu = gr.Button(i18n("convert"))

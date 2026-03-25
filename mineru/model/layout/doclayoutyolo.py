@@ -46,6 +46,24 @@ class DocLayoutYOLOModel:
             })
         return layout_res
 
+    # Thêm vào DocLayoutYOLOModel
+    def predict_with_debug(self, image: Union[np.ndarray, Image.Image]) -> tuple:
+        prediction = self.model.predict(
+            image,
+            imgsz=self.imgsz,
+            conf=0.05,  # Giảm threshold để thấy tất cả detection
+            iou=self.iou,
+            verbose=True  # Bật verbose
+        )[0]
+        results = self._parse_prediction(prediction)
+        
+        # Log tất cả detection
+        print(f"Total detections: {len(results)}")
+        for i, res in enumerate(results):
+            print(f"[{i}] Cat={res['category_id']}, Score={res['score']:.3f}, "
+                f"Bbox={res['poly'][:4]}")
+        
+        return results, prediction
     def predict(self, image: Union[np.ndarray, Image.Image]) -> List[Dict]:
         prediction = self.model.predict(
             image,

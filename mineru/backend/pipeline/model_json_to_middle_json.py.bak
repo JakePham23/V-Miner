@@ -25,7 +25,7 @@ from mineru.version import __version__
 from mineru.utils.hash_utils import bytes_md5
 
 
-def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer, page_index, ocr_enable=False, formula_enabled=True, lang=None):
+def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer, page_index, ocr_enable=False, formula_enabled=True):
     scale = image_dict["scale"]
     page_pil_img = image_dict["img_pil"]
     # page_img_md5 = str_md5(image_dict["img_base64"])
@@ -62,8 +62,7 @@ def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer
             if ocr_enable:
                 pass  # dùng spans từ OCR đã chạy
             else:
-                # Sửa lỗi gọi txt_spans_extract(...) với tham số không hợp lệ
-                spans = txt_spans_extract(page, spans, page_pil_img, scale, [], [])
+                spans = txt_spans_extract(...)  # đọc text layer PDF → rỗng vì PDF là ảnh
                 # 找到与当前block重叠的text spans
                 span_in_block_list = [
                     span for span in spans
@@ -169,8 +168,6 @@ def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer
     fix_blocks = fix_block_spans(block_with_spans)
 
     """对block进行排序"""
-    """OCR lại các title block rỗng — heading bị drop bởi overlap filter"""
-    _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale)
     sorted_blocks = sort_blocks_by_bbox(fix_blocks, page_w, page_h, footnote_blocks)
 
     """构造page_info"""
@@ -186,8 +183,7 @@ def result_to_middle_json(model_list, images_list, pdf_doc, image_writer, lang=N
         page = pdf_doc[page_index]
         image_dict = images_list[page_index]
         page_info = page_model_info_to_page_info(
-            page_model_info, image_dict, page, image_writer, page_index,
-            ocr_enable=ocr_enable, formula_enabled=formula_enabled, lang=lang
+            page_model_info, image_dict, page, image_writer, page_index, ocr_enable=ocr_enable, formula_enabled=formula_enabled
         )
         if page_info is None:
             page_w, page_h = map(int, page.get_size())
@@ -266,112 +262,3 @@ def make_page_info_dict(blocks, page_id, page_w, page_h, discarded_blocks):
         'discarded_blocks': discarded_blocks,
     }
     return return_dict
-
-def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale):
-    """
-    Post-process: với mỗi title block không có span text nào,
-    crop ảnh từ page image và OCR trực tiếp để lấy content.
-
-    Nguyên nhân cần hàm này: OcrText span cho heading bị drop bởi
-    remove_overlaps_min_spans vì nằm trong text span lớn hơn.
-    """
-    import cv2
-    import numpy as np
-    from mineru.backend.pipeline.model_init import AtomModelSingleton
-    from mineru.utils.ocr_utils import OcrConfidence
-
-    # Lấy page image numpy
-    page_pil = image_dict.get("img_pil")
-    if page_pil is None:
-        return
-    page_np = np.array(page_pil)  # RGB
-
-    atom_manager = AtomModelSingleton()
-    try:
-        ocr_model = atom_manager.get_atom_model(
-            atom_model_name="ocr",
-            det_db_box_thresh=0.3,
-            lang=lang,
-        )
-    except Exception as e:
-        from loguru import logger
-        logger.warning(f"[title_ocr] Không load được OCR model: {e}")
-        return
-
-    for block in fix_blocks:
-        if block.get("type") != "title":
-            continue
-
-        # Kiểm tra có span text nào không
-        has_content = any(
-            span.get("content", "").strip()
-            for line in block.get("lines", [])
-            for span in line.get("spans", [])
-        )
-        if has_content:
-            continue
-
-        # Lấy bbox (PDF points) và convert về pixel
-        bbox = block.get("bbox")
-        if not bbox:
-            continue
-
-        x0 = int(bbox[0] * scale)
-        y0 = int(bbox[1] * scale)
-        x1 = int(bbox[2] * scale)
-        y1 = int(bbox[3] * scale)
-
-        # Thêm padding
-        pad = 8
-        h, w = page_np.shape[:2]
-        x0 = max(0, x0 - pad)
-        y0 = max(0, y0 - pad)
-        x1 = min(w, x1 + pad)
-        y1 = min(h, y1 + pad)
-
-        if x1 <= x0 or y1 <= y0:
-            continue
-
-        crop = page_np[y0:y1, x0:x1]
-        bgr = cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)
-
-        try:
-            has_text_det = hasattr(ocr_model, "text_detector") or getattr(ocr_model, "has_text_detector", False)
-            if has_text_det:
-                # Paddle: det+rec
-                ocr_result = ocr_model.ocr(bgr)[0]
-                if ocr_result:
-                    texts = [item[1][0] for item in ocr_result if len(item) >= 2 and item[1][0].strip()]
-                    text = " ".join(texts)
-                else:
-                    text = ""
-            else:
-                # EasyOCR / LightOnOCR: full-image OCR
-                ocr_result = ocr_model.ocr(bgr, det=True, rec=True)[0]
-                if ocr_result:
-                    texts = [item[1][0] for item in ocr_result if len(item) >= 2 and item[1][0].strip()]
-                    text = " ".join(texts)
-                else:
-                    text = ""
-        except Exception as e:
-            from loguru import logger
-            logger.warning(f"[title_ocr] OCR lỗi tại bbox={bbox}: {e}")
-            text = ""
-
-        if text.strip():
-            from loguru import logger
-            logger.debug(f"[title_ocr] Filled title bbox={bbox}: {repr(text[:60])}")
-            # Tạo span mới và gán vào line đầu tiên của block
-            new_span = {
-                "bbox": bbox,
-                "type": "text",
-                "content": text.strip(),
-                "score": 0.9,
-            }
-            if block.get("lines"):
-                block["lines"][0].setdefault("spans", []).append(new_span)
-            else:
-                block["lines"] = [{
-                    "bbox": bbox,
-                    "spans": [new_span],
-                }]

@@ -335,6 +335,9 @@ def get_ocr_result_list(ocr_res, useful_list, ocr_enable, bgr_image, lang):
     ocr_result_list = []
     ori_im = bgr_image.copy()
     for box_ocr_res in ocr_res:
+        
+        # Initialize img_crop to None
+        img_crop = None
 
         if len(box_ocr_res) == 2:
             p1, p2, p3, p4 = box_ocr_res[0]
@@ -342,6 +345,11 @@ def get_ocr_result_list(ocr_res, useful_list, ocr_enable, bgr_image, lang):
             # logger.info(f"text: {text}, score: {score}")
             if score < OcrConfidence.min_confidence:  # 过滤低置信度的结果
                 continue
+            
+            # Create img_crop if ocr_enable and we have valid points
+            if ocr_enable:
+                tmp_box = copy.deepcopy(np.array([p1, p2, p3, p4]).astype('float32'))
+                img_crop = get_rotate_crop_image(ori_im, tmp_box)
         else:
             p1, p2, p3, p4 = box_ocr_res
             text, score = "", 1
@@ -395,6 +403,7 @@ def get_ocr_result_list(ocr_res, useful_list, ocr_enable, bgr_image, lang):
             })
 
     return ocr_result_list
+
 
 
 def calculate_is_angle(poly):

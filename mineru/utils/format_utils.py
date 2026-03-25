@@ -340,3 +340,149 @@ def block_content_to_html(block_content: str) -> str:
             line = convert_otsl_to_html(line)
         new_lines.append(line)
     return "\n\n".join(new_lines)
+
+
+# ── HTML to Markdown Conversion Utilities ───────────────────────────────────
+
+def _parse_section_to_grid(section_html: str) -> list[list[str]]:
+    """Parses a <thead> or <tbody> section into a 2D grid of strings, handling row/colspan."""
+    rows_html = re.findall(r'<tr[^>]*>(.*?)</tr>', section_html, re.IGNORECASE | re.DOTALL)
+    if not rows_html:
+        return []
+
+    # First pass: find max dimensions and store cells with their spans
+    occupied = {}  # (row, col) -> text
+    row_idx = 0
+    for r_html in rows_html:
+        cells = re.findall(r'<(td|th)[^>]*>(.*?)</\1>', r_html, re.IGNORECASE | re.DOTALL)
+        col_idx = 0
+        for tag, content in cells:
+            # Simple regex for span attributes
+            rs_m = re.search(r'rowspan=["\'](\d+)["\']', tag, re.IGNORECASE)
+            cs_m = re.search(r'colspan=["\'](\d+)["\']', tag, re.IGNORECASE)
+            rs = int(rs_m.group(1)) if rs_m else 1
+            cs = int(cs_m.group(1)) if cs_m else 1
+
+            # Skip occupied cells
+            while (row_idx, col_idx) in occupied:
+                col_idx += 1
+
+            # Fill grid for spans
+            text = html.unescape(re.sub(r'<[^>]+>', '', content).strip())
+            for r in range(rs):
+                for c in range(cs):
+                    occupied[(row_idx + r, col_idx + c)] = text
+            col_idx += cs
+        row_idx += 1
+
+    if not occupied:
+        return []
+
+    max_r = max(r for r, c in occupied.keys()) + 1
+    max_c = max(c for r, c in occupied.keys()) + 1
+
+    grid = []
+    for r in range(max_r):
+        row = []
+        for c in range(max_c):
+            row.append(occupied.get((r, c), ""))
+        grid.append(row)
+    return grid
+
+
+def _parse_table_to_grid(html_str: str) -> tuple[list[list[str]], list[list[str]]]:
+    """Splits a table into header and body grids."""
+    thead_m = re.search(r'<thead[^>]*>(.*?)</thead>', html_str, re.IGNORECASE | re.DOTALL)
+    tbody_m = re.search(r'<tbody[^>]*>(.*?)</tbody>', html_str, re.IGNORECASE | re.DOTALL)
+
+    thead_html = thead_m.group(1) if thead_m else ''
+    tbody_html = tbody_m.group(1) if tbody_m else ''
+
+    if not thead_html and not tbody_html:
+        tbody_html = html_str
+
+    header_rows = _parse_section_to_grid(thead_html) if thead_html else []
+    body_rows   = _parse_section_to_grid(tbody_html) if tbody_html else []
+
+    # If no thead, check if first row of body is all <th>
+    if not header_rows and body_rows:
+        first_tr = re.search(r'<tr[^>]*>(.*?)</tr>', tbody_html, re.IGNORECASE | re.DOTALL)
+        if first_tr and '<th' in first_tr.group(1).lower():
+            header_rows = body_rows[:1]
+            body_rows   = body_rows[1:]
+
+    return header_rows, body_rows
+
+
+def _merge_multirow_header(header_rows: list[list[str]]) -> list[str]:
+    """Merges a multi-row header into a single row using ' / ' as a separator."""
+    if not header_rows: return []
+    if len(header_rows) == 1: return header_rows[0]
+
+    n_cols = max(len(r) for r in header_rows)
+    # Pad rows to same length
+    rows = [r + [''] * (n_cols - len(r)) for r in header_rows]
+    
+    merged = []
+    for col in range(n_cols):
+        values = [rows[r][col] for r in range(len(rows))]
+        # Keep unique non-empty values in order
+        unique = []
+        for v in values:
+            if v and v not in unique:
+                unique.append(v)
+        
+        if not unique:
+            merged.append('')
+        elif len(unique) == 1:
+            merged.append(unique[0])
+        else:
+            merged.append(' / '.join(unique))
+    return merged
+
+
+def html_table_to_markdown(html_str: str) -> str:
+    """Converts an HTML table string to a GitHub-flavored Markdown table."""
+    html_str = html_str.strip()
+    if not re.search(r'<table', html_str, re.IGNORECASE):
+        return html_str
+
+    header_rows, body_rows = _parse_table_to_grid(html_str)
+    
+    # Logic thông minh: Nếu không có header chính thức nhưng có dữ liệu, lấy hàng đầu tiên làm header
+    if not header_rows and body_rows:
+        header = body_rows[0]
+        body_rows = body_rows[1:]
+    elif header_rows:
+        header = _merge_multirow_header(header_rows)
+    else:
+        header = []
+    
+    # Xác định số lượng cột thực tế
+    n_cols = len(header)
+    if body_rows:
+        n_cols = max(n_cols, max(len(r) for r in body_rows))
+    
+    if n_cols == 0:
+        # Nếu bảng hoàn toàn rỗng, trả về chuỗi rỗng thay vì table lỗi
+        return ""
+
+    def pad(row: list[str]) -> list[str]:
+        # Thoát các ký tự | và xóa xuống dòng để tránh phá vỡ cấu trúc MD table
+        escaped = [str(r).replace('|', '\\|').replace('\n', ' ').strip() for r in row]
+        return (escaped + [''] * n_cols)[:n_cols]
+
+    lines = []
+    # Render tiêu đề và dòng phân cách
+    if header:
+        lines.append('| ' + ' | '.join(pad(header)) + ' |')
+        lines.append('| ' + ' | '.join(['---'] * n_cols) + ' |')
+    else:
+        # Trường hợp hy hữu không có cả data, bỏ qua
+        return ""
+    
+    # Render các hàng dữ liệu còn lại
+    for row in body_rows:
+        lines.append('| ' + ' | '.join(pad(row)) + ' |')
+
+    return '\n'.join(lines)

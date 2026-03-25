@@ -81,6 +81,8 @@ class MagicModel:
             code_block_sub_type = None
             guess_lang = None
 
+            logger.warning(f"[MagicModel] type={block_type!r:20s} content={repr((block_content or '')[:80])}")
+
             if block_type in [
                 "text",
                 "title",
