@@ -29,3 +29,7 @@ We prefer all communications to be in English and Chinese.
 ## Policy
 
 We will fix security issues in the project's own code as quickly as possible. Before the project completes the fix, you must not disclose the vulnerability information to any public platform.
+
+
+pyobjc-framework-Vision
+pyobjc-framework-Quartz

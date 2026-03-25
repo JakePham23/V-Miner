@@ -173,6 +173,18 @@ def doc_analyze_streaming(
         zip(pdf_bytes_list, image_writer_list, lang_list)
     ):
         _ocr_enable = _get_ocr_enable(pdf_bytes, parse_method)
+        
+        # Chỉ sử dụng LightOnOCR nếu PDF thực sự là ảnh quét (OCR) và server sẵn sàng
+        from mineru.utils.lighton_utils import should_use_lighton
+        if _ocr_enable and should_use_lighton(lang):
+            logger.info(f"Kích hoạt LightOnOCR toàn diện cho PDF Tiếng Việt (Text/Table/Image)")
+            lang = "vi-light-ocr"
+            # Thiết lập backend để HybridLightOCR và các thành phần khác biết dùng LightOn
+            import os
+            os.environ['MINERU_TEXT_BACKEND'] = 'lighton'
+            os.environ['MINERU_TABLE_BACKEND'] = 'lighton'
+            os.environ['MINERU_IMAGE_BACKEND'] = 'lighton'
+            
         pdf_doc = open_pdfium_document(pdfium.PdfDocument, pdf_bytes)
         page_count = get_pdfium_document_page_count(pdf_doc)
         total_pages += page_count
@@ -190,6 +202,7 @@ def doc_analyze_streaming(
                 'ocr_enable': _ocr_enable,
                 'closed': False,
             }
+
         )
 
     if total_pages == 0:

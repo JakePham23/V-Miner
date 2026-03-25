@@ -22,6 +22,7 @@ from mineru.utils.pdfium_guard import close_pdfium_document, pdfium_guard
 
 
 def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer, page_index, ocr_enable=False):
+def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer, page_index, ocr_enable=False, formula_enabled=True, lang=None):
     scale = image_dict["scale"]
     page_pil_img = image_dict["img_pil"]
     page_img_md5 = bytes_md5(page_pil_img.tobytes())
@@ -51,6 +52,139 @@ def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer
             ContentType.INTERLINE_EQUATION
         ]:
             span = cut_image_and_table(span, page_pil_img, page_img_md5, page_index, image_writer, scale=scale)
+    img_groups = magic_model.get_imgs()
+    table_groups = magic_model.get_tables()
+
+    """对image和table的区块分组"""
+    img_body_blocks, img_caption_blocks, img_footnote_blocks, maybe_text_image_blocks = process_groups(
+        img_groups, 'image_body', 'image_caption_list', 'image_footnote_list'
+    )
+
+    table_body_blocks, table_caption_blocks, table_footnote_blocks, _ = process_groups(
+        table_groups, 'table_body', 'table_caption_list', 'table_footnote_list'
+    )
+
+    """获取所有的spans信息"""
+    spans = magic_model.get_all_spans()
+
+    """某些图可能是文本块，通过简单的规则判断一下"""
+    if len(maybe_text_image_blocks) > 0:
+        for block in maybe_text_image_blocks:
+            should_add_to_text_blocks = False
+
+            if ocr_enable:
+                pass  # dùng spans từ OCR đã chạy
+            else:
+                # Sửa lỗi gọi txt_spans_extract(...) với tham số không hợp lệ
+                spans = txt_spans_extract(page, spans, page_pil_img, scale, [], [])
+                # 找到与当前block重叠的text spans
+                span_in_block_list = [
+                    span for span in spans
+                    if span['type'] == 'text' and
+                       calculate_overlap_area_in_bbox1_area_ratio(span['bbox'], block['bbox']) > 0.7
+                ]
+
+                if len(span_in_block_list) > 0:
+                    # 计算spans总面积
+                    spans_area = sum(
+                        (span['bbox'][2] - span['bbox'][0]) * (span['bbox'][3] - span['bbox'][1])
+                        for span in span_in_block_list
+                    )
+
+                    # 计算block面积
+                    block_area = (block['bbox'][2] - block['bbox'][0]) * (block['bbox'][3] - block['bbox'][1])
+
+                    # 判断是否符合文本图条件
+                    if block_area > 0 and spans_area / block_area > 0.25:
+                        should_add_to_text_blocks = True
+
+            # 根据条件决定添加到哪个列表
+            if should_add_to_text_blocks:
+                block.pop('group_id', None)  # 移除group_id
+                text_blocks.append(block)
+            else:
+                img_body_blocks.append(block)
+
+
+    """将所有区块的bbox整理到一起"""
+    if formula_enabled:
+        interline_equation_blocks = []
+
+    if len(interline_equation_blocks) > 0:
+
+        for block in interline_equation_blocks:
+            spans.append({
+                "type": ContentType.INTERLINE_EQUATION,
+                'score': block['score'],
+                "bbox": block['bbox'],
+                "content": "",
+            })
+
+        all_bboxes, all_discarded_blocks, footnote_blocks = prepare_block_bboxes(
+            img_body_blocks, img_caption_blocks, img_footnote_blocks,
+            table_body_blocks, table_caption_blocks, table_footnote_blocks,
+            discarded_blocks,
+            text_blocks,
+            title_blocks,
+            interline_equation_blocks,
+            page_w,
+            page_h,
+        )
+    else:
+        all_bboxes, all_discarded_blocks, footnote_blocks = prepare_block_bboxes(
+            img_body_blocks, img_caption_blocks, img_footnote_blocks,
+            table_body_blocks, table_caption_blocks, table_footnote_blocks,
+            discarded_blocks,
+            text_blocks,
+            title_blocks,
+            interline_equations,
+            page_w,
+            page_h,
+        )
+
+    """在删除重复span之前，应该通过image_body和table_body的block过滤一下image和table的span"""
+    """顺便删除大水印并保留abandon的span"""
+    spans = remove_outside_spans(spans, all_bboxes, all_discarded_blocks)
+
+    """删除重叠spans中置信度较低的那些"""
+    spans, dropped_spans_by_confidence = remove_overlaps_low_confidence_spans(spans)
+    """删除重叠spans中较小的那些"""
+    spans, dropped_spans_by_span_overlap = remove_overlaps_min_spans(spans)
+
+    """根据parse_mode，构造spans，主要是文本类的字符填充"""
+    if ocr_enable:
+        pass
+    else:
+        """使用新版本的混合ocr方案."""
+        spans = txt_spans_extract(page, spans, page_pil_img, scale, all_bboxes, all_discarded_blocks)
+
+    """先处理不需要排版的discarded_blocks"""
+    discarded_block_with_spans, spans = fill_spans_in_blocks(
+        all_discarded_blocks, spans, 0.4
+    )
+    fix_discarded_blocks = fix_discarded_block(discarded_block_with_spans)
+
+    """如果当前页面没有有效的bbox则跳过"""
+    if len(all_bboxes) == 0 and len(fix_discarded_blocks) == 0:
+        return None
+
+    """对image/table/interline_equation截图"""
+    for span in spans:
+        if span['type'] in [ContentType.IMAGE, ContentType.TABLE, ContentType.INTERLINE_EQUATION]:
+            span = cut_image_and_table(
+                span, page_pil_img, page_img_md5, page_index, image_writer, scale=scale
+            )
+
+    """span填充进block"""
+    block_with_spans, spans = fill_spans_in_blocks(all_bboxes, spans, 0.5)
+
+    """对block进行fix操作"""
+    fix_blocks = fix_block_spans(block_with_spans)
+
+    """对block进行排序"""
+    """OCR lại các title block rỗng — heading bị drop bởi overlap filter"""
+    _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale)
+    sorted_blocks = sort_blocks_by_bbox(fix_blocks, page_w, page_h, footnote_blocks)
 
     """构造page_info"""
     replace_inline_table_images(preproc_blocks, image_writer, page_index)
@@ -86,6 +220,9 @@ def append_page_model_infos_to_middle_json(
             image_writer,
             page_index,
             ocr_enable=ocr_enable,
+=======
+            page_model_info, image_dict, page, image_writer, page_index,
+            ocr_enable=ocr_enable, formula_enabled=formula_enabled, lang=lang
         )
         if page_info is None:
             with pdfium_guard():
@@ -213,6 +350,41 @@ def _apply_post_ocr(pdf_info_list, lang=None):
                     # Keep post-OCR rec aligned with the main OCR pipeline for vertical tall crops.
                     img_crop_list.append(rotate_vertical_crop_if_needed(span['np_img']))
                     span.pop('np_img')
+=======
+    text_block_list = []
+    for page_info in middle_json["pdf_info"]:
+        for block in page_info['preproc_blocks']:
+            if block['type'] in ['table', 'image']:
+                for sub_block in block['blocks']:
+                    if sub_block['type'] in ['image_caption', 'image_footnote', 'table_caption', 'table_footnote']:
+                        text_block_list.append(sub_block)
+            elif block['type'] in ['text', 'title']:
+                text_block_list.append(block)
+        for block in page_info['discarded_blocks']:
+            text_block_list.append(block)
+    for block in text_block_list:  # chỉ lấy 'text' và 'title'
+        for line in block['lines']:
+            for span in line['spans']:
+                if 'np_img' in span:  # ← title spans không bao giờ có np_img
+                    need_ocr_list.append(span)
+    if len(img_crop_list) > 0:
+        atom_model_manager = AtomModelSingleton()
+        ocr_model = atom_model_manager.get_atom_model(
+            atom_model_name='ocr',
+            det_db_box_thresh=0.3,
+            lang=lang
+        )
+        ocr_res_list = ocr_model.ocr(img_crop_list, det=False, tqdm_enable=True)[0]
+        assert len(ocr_res_list) == len(
+            need_ocr_list), f'ocr_res_list: {len(ocr_res_list)}, need_ocr_list: {len(need_ocr_list)}'
+        for index, span in enumerate(need_ocr_list):
+            ocr_text, ocr_score = ocr_res_list[index]
+            if ocr_score > OcrConfidence.min_confidence:
+                span['content'] = ocr_text
+                span['score'] = float(f"{ocr_score:.3f}")
+            else:
+                span['content'] = ''
+                span['score'] = 0.0
 
         for block in page_info.get('discarded_blocks', []):
             for span in _iter_block_spans(block):
@@ -314,3 +486,112 @@ def make_page_info_dict(blocks, page_id, page_w, page_h, discarded_blocks):
         'discarded_blocks': discarded_blocks,
     }
     return return_dict
+
+def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale):
+    """
+    Post-process: với mỗi title block không có span text nào,
+    crop ảnh từ page image và OCR trực tiếp để lấy content.
+
+    Nguyên nhân cần hàm này: OcrText span cho heading bị drop bởi
+    remove_overlaps_min_spans vì nằm trong text span lớn hơn.
+    """
+    import cv2
+    import numpy as np
+    from mineru.backend.pipeline.model_init import AtomModelSingleton
+    from mineru.utils.ocr_utils import OcrConfidence
+
+    # Lấy page image numpy
+    page_pil = image_dict.get("img_pil")
+    if page_pil is None:
+        return
+    page_np = np.array(page_pil)  # RGB
+
+    atom_manager = AtomModelSingleton()
+    try:
+        ocr_model = atom_manager.get_atom_model(
+            atom_model_name="ocr",
+            det_db_box_thresh=0.3,
+            lang=lang,
+        )
+    except Exception as e:
+        from loguru import logger
+        logger.warning(f"[title_ocr] Không load được OCR model: {e}")
+        return
+
+    for block in fix_blocks:
+        if block.get("type") != "title":
+            continue
+
+        # Kiểm tra có span text nào không
+        has_content = any(
+            span.get("content", "").strip()
+            for line in block.get("lines", [])
+            for span in line.get("spans", [])
+        )
+        if has_content:
+            continue
+
+        # Lấy bbox (PDF points) và convert về pixel
+        bbox = block.get("bbox")
+        if not bbox:
+            continue
+
+        x0 = int(bbox[0] * scale)
+        y0 = int(bbox[1] * scale)
+        x1 = int(bbox[2] * scale)
+        y1 = int(bbox[3] * scale)
+
+        # Thêm padding
+        pad = 8
+        h, w = page_np.shape[:2]
+        x0 = max(0, x0 - pad)
+        y0 = max(0, y0 - pad)
+        x1 = min(w, x1 + pad)
+        y1 = min(h, y1 + pad)
+
+        if x1 <= x0 or y1 <= y0:
+            continue
+
+        crop = page_np[y0:y1, x0:x1]
+        bgr = cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)
+
+        try:
+            has_text_det = hasattr(ocr_model, "text_detector") or getattr(ocr_model, "has_text_detector", False)
+            if has_text_det:
+                # Paddle: det+rec
+                ocr_result = ocr_model.ocr(bgr)[0]
+                if ocr_result:
+                    texts = [item[1][0] for item in ocr_result if len(item) >= 2 and item[1][0].strip()]
+                    text = " ".join(texts)
+                else:
+                    text = ""
+            else:
+                # EasyOCR / LightOnOCR: full-image OCR
+                ocr_result = ocr_model.ocr(bgr, det=True, rec=True)[0]
+                if ocr_result:
+                    texts = [item[1][0] for item in ocr_result if len(item) >= 2 and item[1][0].strip()]
+                    text = " ".join(texts)
+                else:
+                    text = ""
+        except Exception as e:
+            from loguru import logger
+            logger.warning(f"[title_ocr] OCR lỗi tại bbox={bbox}: {e}")
+            text = ""
+
+        if text.strip():
+            from loguru import logger
+            logger.debug(f"[title_ocr] Filled title bbox={bbox}: {repr(text[:60])}")
+            # Tạo span mới và gán vào line đầu tiên của block
+            new_span = {
+                "bbox": bbox,
+                "type": "text",
+                "content": text.strip(),
+                "score": 0.9,
+            }
+            if block.get("lines"):
+                block["lines"][0].setdefault("spans", []).append(new_span)
+            else:
+                block["lines"] = [{
+                    "bbox": bbox,
+                    "spans": [new_span],
+                }]

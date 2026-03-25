@@ -281,9 +281,6 @@ MinerU provides a convenient Docker deployment method, which helps quickly set u
 > - macOS users should refer to the two installation methods above for installation instead of using Docker deployment.
 
 You can get the [Docker Deployment Instructions](https://opendatalab.github.io/MinerU/quick_start/docker_deployment/) in the documentation.
-=======
-Phiên bản này của MinerU đã được tích hợp thêm khả năng nhận diện tiếng Việt chuyên sâu thông qua **EasyOCR** (cho văn bản thường) và **LightOnOCR API** (cho bảng biểu phức tạp). 
->>>>>>> 6b3f72a7 (feat(ocr): add custom algorithm to handle Vietnamese diacritics)
 
 ---
 
@@ -377,29 +374,6 @@ This repository is licensed under the [MinerU Open Source License](https://githu
   journal={arXiv preprint arXiv:2407.13773},
   year={2024}
 }
-=======
-**Cách 2: Tự động nhận diện (Auto-Routing)**
-Nếu bạn dùng chế độ `auto` mà không truyền cờ ngôn ngữ, hệ thống sẽ tự quét vài trang đầu. Nếu phát hiện thấy nhiều ký tự tiếng Việt có dấu, nó sẽ tự động chuyển sang chế độ `-l vi`.
-```bash
-mineru -p <input_pdf_hoac_anh> -o <thumuc_luu> -b pipeline -m auto
-```
-*Ghi chú: Đối với các file PDF thuần text thông thường (không phải ảnh scan), chế độ `auto` sẽ vẫn dùng trình trích xuất text mặc định, rất nhanh và không gọi OCR.*
-
----
-
-## 📊 3. Hướng dẫn cấu hình API cho Bảng biểu (LightOnOCR)
-
-Nhận diện bảng biểu tiếng Việt trong ảnh khá phức tạp. Chúng tôi cung cấp thêm cấu hình gọi API sang các mô hình VLM (Vision-Language Model) tương thích chuẩn OpenAI (ví dụ: mô hình triển khai trên **LM Studio** hoặc **Ollama**).
-
-Nếu bạn muốn bảng biểu được OCR chính xác, hãy bật một Local Server (như LM Studio đang chạy model `lightonocr`) và cấu hình các biến môi trường sau trước khi chạy lệnh `mineru`:
-
-```bash
-# Cấu hình cho macOS / Linux
-export LIGHTON_SERVER_URL="http://localhost:1234/v1/chat/completions" # Địa chỉ API
-export LIGHTON_MODEL_NAME="lightonocr"                                # Tên model bạn đang host
-export LIGHTON_API_TYPE="openai"                                      # Loại API: 'openai' hoặc 'ollama'
->>>>>>> 6b3f72a7 (feat(ocr): add custom algorithm to handle Vietnamese diacritics)
-```
 
 *Cơ chế Fallback: Nếu MinerU không thể kết nối tới API này (server tắt, lỗi mạng, v.v.), hệ thống sẽ không bị crash mà tự động chuyển (fallback) về dùng mô hình nhận diện bảng mặc định của PaddleOCR.*
 
@@ -422,6 +396,18 @@ export LIGHTON_API_TYPE="openai"                                      # Loại A
 ## ❓ Câu hỏi thường gặp
 - **Hỏi**: Tại sao kết quả ra tiếng Việt bị mất dấu?
   - **Đáp**: Hãy chắc chắn bạn đã truyền `-b pipeline -l vi` (để gọi EasyOCR) thay vì chạy backend mặc định (`hybrid-auto-engine` dùng VLM Qwen đôi khi không rành tiếng Việt).
+<<<<<<< HEAD
 - **Hỏi**: Không có LM Studio thì sao?
   - **Đáp**: Bảng biểu sẽ dùng mô hình mặc định. Chỉ phần text thường mới dùng EasyOCR.
 >>>>>>> 6b3f72a7 (feat(ocr): add custom algorithm to handle Vietnamese diacritics)
+=======
+---
+
+## 👥 Đội ngũ thực hiện & Đóng góp
+
+Phiên bản tối ưu hóa MinerU cho Tiếng Việt này được thực hiện bởi sự cộng tác giữa:
+- **Người dùng (User):** Định hướng kiến trúc, cung cấp yêu cầu nghiệp vụ và tích hợp các công nghệ OCR chuyên sâu (EasyOCR, LightOnOCR).
+- **Gemini CLI (AI Assistant):** Hỗ trợ lập trình, thực thi các thay đổi mã nguồn, tối ưu hóa logic phân loại PDF và điều phối luồng xử lý (pipeline).
+
+Chúng tôi cùng nhau tạo ra một công cụ mạnh mẽ hơn để xử lý tài liệu Tiếng Việt một cách tự động và chính xác.
+>>>>>>> 6433a2ce (updating process image and convert html layout to markdown)
