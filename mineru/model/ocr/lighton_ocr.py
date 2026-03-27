@@ -272,7 +272,7 @@ _PROMPT_ECHO_PATTERNS = [
 _ARTIFACT_PATTERNS = [
     (re.compile(r'^\$\^ \+\$\s*$', re.MULTILINE), ''),
     (re.compile(r'^#\s*$', re.MULTILINE), ''),
-    (re.compile(r'\n{3,}'), '\n\n'),
+    (re.compile(r'^Note:.*$', re.MULTILINE | re.IGNORECASE), ''), # Thêm dòng này để chém "Note:"
 ]
 
 def _clean_ocr_response(text: str, prompt: str = "") -> str:
@@ -504,8 +504,8 @@ class LightOnOCR:
 
         prompt = (
             "Extract all text from this image accurately. "
-            "Output only the extracted text, preserving line breaks. "
-            "Ensure Vietnamese diacritics are accurate."
+            "Output ONLY the raw extracted text. "
+            "DO NOT output any notes, explanations, comments, or markdown code blocks."
         )
         text = self._call_api(image, prompt)
         text = _clean_ocr_response(text, prompt)
