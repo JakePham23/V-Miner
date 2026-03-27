@@ -165,12 +165,16 @@ def page_model_info_to_page_info(page_model_info, image_dict, page, image_writer
     """span填充进block"""
     block_with_spans, spans = fill_spans_in_blocks(all_bboxes, spans, 0.5)
 
+    """对未分配的orphaned spans进行回收，避免VLM OCR文本丢失"""
+    orphaned_blocks = _recover_orphaned_spans(spans, all_bboxes)
+    block_with_spans.extend(orphaned_blocks)
+
     """对block进行fix操作"""
     fix_blocks = fix_block_spans(block_with_spans)
 
     """对block进行排序"""
-    """OCR lại các title block rỗng — heading bị drop bởi overlap filter"""
-    _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale)
+    """Sử dụng OCR để điền nội dung cho các block (Title/Text) còn trống"""
+    _ocr_fill_empty_blocks(page_model_info, image_dict, fix_blocks, lang, scale)
     sorted_blocks = sort_blocks_by_bbox(fix_blocks, page_w, page_h, footnote_blocks)
 
     """构造page_info"""
@@ -267,18 +271,19 @@ def make_page_info_dict(blocks, page_id, page_w, page_h, discarded_blocks):
     }
     return return_dict
 
-def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale):
+def _ocr_fill_empty_blocks(page_model_info, image_dict, fix_blocks, lang, scale):
     """
-    Post-process: với mỗi title block không có span text nào,
-    crop ảnh từ page image và OCR trực tiếp để lấy content.
-
-    Nguyên nhân cần hàm này: OcrText span cho heading bị drop bởi
-    remove_overlaps_min_spans vì nằm trong text span lớn hơn.
+    Hậu xử lý: Với mỗi block Title hoặc Text không có span nội dung nào,
+    sẽ crop ảnh từ page image và OCR trực tiếp để lấy content.
+    
+    Điều này giúp khắc phục lỗi: Block được Layout nhận diện tốt nhưng OCR span 
+    bị vứt bỏ do overlap filter hoặc tọa độ lệch.
     """
     import cv2
     import numpy as np
     from mineru.backend.pipeline.model_init import AtomModelSingleton
     from mineru.utils.ocr_utils import OcrConfidence
+    from mineru.utils.enum_class import BlockType
 
     # Lấy page image numpy
     page_pil = image_dict.get("img_pil")
@@ -295,14 +300,15 @@ def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale
         )
     except Exception as e:
         from loguru import logger
-        logger.warning(f"[title_ocr] Không load được OCR model: {e}")
+        logger.warning(f"[ocr_fill] Không load được OCR model: {e}")
         return
 
     for block in fix_blocks:
-        if block.get("type") != "title":
+        # Chỉ xử lý các loại block văn bản/tiêu đề
+        if block.get("type") not in [BlockType.TITLE, BlockType.TEXT]:
             continue
 
-        # Kiểm tra có span text nào không
+        # Kiểm tra xem block đã có nội dung chưa
         has_content = any(
             span.get("content", "").strip()
             for line in block.get("lines", [])
@@ -311,7 +317,7 @@ def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale
         if has_content:
             continue
 
-        # Lấy bbox (PDF points) và convert về pixel
+        # Lấy bbox (PDF points) và convert về pixel để crop
         bbox = block.get("bbox")
         if not bbox:
             continue
@@ -321,7 +327,7 @@ def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale
         x1 = int(bbox[2] * scale)
         y1 = int(bbox[3] * scale)
 
-        # Thêm padding
+        # Thêm padding nhỏ để OCR nhận diện tốt hơn (tránh cắt sát quá)
         pad = 8
         h, w = page_np.shape[:2]
         x0 = max(0, x0 - pad)
@@ -336,9 +342,10 @@ def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale
         bgr = cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)
 
         try:
+            # Kiểm tra xem ocr_model có text_detector không (ví dụ PaddleOCR)
             has_text_det = hasattr(ocr_model, "text_detector") or getattr(ocr_model, "has_text_detector", False)
             if has_text_det:
-                # Paddle: det+rec
+                # Paddle: thực hiện cả det+rec trong vùng crop
                 ocr_result = ocr_model.ocr(bgr)[0]
                 if ocr_result:
                     texts = [item[1][0] for item in ocr_result if len(item) >= 2 and item[1][0].strip()]
@@ -346,7 +353,7 @@ def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale
                 else:
                     text = ""
             else:
-                # EasyOCR / LightOnOCR: full-image OCR
+                # Engine khác (EasyOCR / LightOnOCR): OCR toàn bộ vùng crop
                 ocr_result = ocr_model.ocr(bgr, det=True, rec=True)[0]
                 if ocr_result:
                     texts = [item[1][0] for item in ocr_result if len(item) >= 2 and item[1][0].strip()]
@@ -355,12 +362,12 @@ def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale
                     text = ""
         except Exception as e:
             from loguru import logger
-            logger.warning(f"[title_ocr] OCR lỗi tại bbox={bbox}: {e}")
+            logger.warning(f"[ocr_fill] OCR lỗi tại bbox={bbox}: {e}")
             text = ""
 
         if text.strip():
             from loguru import logger
-            logger.debug(f"[title_ocr] Filled title bbox={bbox}: {repr(text[:60])}")
+            logger.debug(f"[ocr_fill] Filled {block.get('type')} content: {repr(text[:60])}")
             # Tạo span mới và gán vào line đầu tiên của block
             new_span = {
                 "bbox": bbox,
@@ -375,3 +382,41 @@ def _ocr_empty_title_blocks(page_model_info, image_dict, fix_blocks, lang, scale
                     "bbox": bbox,
                     "spans": [new_span],
                 }]
+
+def _recover_orphaned_spans(spans, all_bboxes):
+    """
+    回收未分配给任何block的spans，将其转换为独立的text blocks。
+    主要用于VLM生成的OcrText span (category 15)，因为layout模型可能漏检这些区域。
+    """
+    from mineru.utils.enum_class import BlockType, ContentType
+    from mineru.utils.boxbase import calculate_overlap_area_in_bbox1_area_ratio
+    orphaned_blocks = []
+    
+    # 过滤出有内容的文本类span
+    valid_spans = [
+        span for span in spans 
+        if span.get('type') in [ContentType.TEXT, ContentType.INLINE_EQUATION]
+        and span.get('content', '').strip()
+    ]
+    
+    for span in valid_spans:
+        span_bbox = span['bbox']
+        
+        # 检查是否与现有任何 block 有显著重叠，如果有则认为是已经被覆盖的（或者是 layout 模型认为该丢弃的）
+        is_covered = False
+        for block_bbox_full in all_bboxes:
+            block_bbox = block_bbox_full[:4]
+            if calculate_overlap_area_in_bbox1_area_ratio(span_bbox, block_bbox) > 0.1:
+                is_covered = True
+                break
+        
+        if not is_covered:
+            # 构造符合 fix_block_spans 输入格式 of block dictionary
+            block = {
+                'type': BlockType.TEXT,
+                'bbox': span_bbox,
+                'spans': [span],
+            }
+            orphaned_blocks.append(block)
+    
+    return orphaned_blocks

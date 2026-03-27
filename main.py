@@ -37,7 +37,10 @@ def process_v_mineru(input_path: str, output_dir: str = "./output"):
         logger.exception(f"Lỗi trong quá trình xử lý: {e}")
 
 if __name__ == "__main__":
-    # Thay đổi đường dẫn file của bạn tại đây
-    FILE_TO_PROCESS = "demo3.pdf" 
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", type=str, required=True, help="Path to PDF file")
+    parser.add_argument("--output", type=str, default="./output", help="Output directory")
+    args = parser.parse_args()
     
-    process_v_mineru(FILE_TO_PROCESS)
+    process_v_mineru(args.input, args.output)

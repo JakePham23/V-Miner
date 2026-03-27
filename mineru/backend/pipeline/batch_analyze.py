@@ -149,7 +149,7 @@ class BatchAnalyze:
             np_img = np_images[index]
 
             # ── Post-process layout_res ────────────────────────────────────────
-            # layout_res = _fix_layout_res(layout_res)
+            layout_res = _fix_layout_res(layout_res)
             images_layout_res[index] = layout_res
             # ──────────────────────────────────────────────────────────────────
 
