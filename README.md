@@ -43,10 +43,13 @@ Nếu bạn muốn bảng biểu được OCR chính xác, hãy bật một Loca
 
 ```bash
 # Cấu hình cho macOS / Linux
-export LIGHTON_SERVER_URL="http://localhost:1234/v1/chat/completions" # Địa chỉ API
-export LIGHTON_MODEL_NAME="lightonocr"                                # Tên model bạn đang host
-export LIGHTON_API_TYPE="openai"                                      # Loại API: 'openai' hoặc 'ollama'
+export LLM_SERVICE="openai"                           # Loại dịch vụ (openai/ollama)
+export OPENAI_API_BASE="http://localhost:1234/v1"      # Địa chỉ API Base
+export OPENAI_API_KEY="lm-studio"                      # API Key (hoặc token của provider)
+export OPENAI_MODEL="lightonocr"                       # Tên model bạn muốn sử dụng
 ```
+
+*Ghi chú: Hệ thống vẫn hỗ trợ các biến cũ `LIGHTON_SERVER_URL` và `LIGHTON_MODEL_NAME` để đảm bảo tính tương thích.*
 
 *Cơ chế Fallback: Nếu MinerU không thể kết nối tới API này (server tắt, lỗi mạng, v.v.), hệ thống sẽ không bị crash mà tự động chuyển (fallback) về dùng mô hình nhận diện bảng mặc định của PaddleOCR.*
 

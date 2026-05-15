@@ -115,11 +115,45 @@ class BatchAnalyze:
 
         np_images = [np.asarray(image) for image, _, _ in images_with_extra_info]
 
-        # doclayout_yolo
-
-        images_layout_res += self.model.layout_model.batch_predict(
-            pil_images, YOLO_LAYOUT_BASE_BATCH_SIZE
-        )
+        # --- LAYOUT SELECTION (MARKER STYLE) ---
+        layout_backend = os.getenv('MINERU_LAYOUT_BACKEND', 'yolo').lower()
+        
+        if layout_backend == 'surya':
+            from mineru.utils.lighton_utils import SuryaLayoutWrapper
+            surya = SuryaLayoutWrapper()
+            logger.info("Using Surya Layout backend (Marker style)")
+            # Surya predict for all images
+            for img in pil_images:
+                res = surya.predict(img)
+                if res:
+                    images_layout_res.append(res)
+                else:
+                    # Fallback to YOLO if Surya fails/not installed
+                    logger.warning("Surya Layout failed, falling back to YOLO")
+                    images_layout_res += self.model.layout_model.batch_predict([img], 1)
+        elif layout_backend == 'llm':
+            from mineru.utils.lighton_utils import analyze_layout_with_llm
+            import base64
+            from io import BytesIO
+            logger.info("Using LLM-based Layout Analysis (Marker VIP style)")
+            for img in pil_images:
+                buffered = BytesIO()
+                img.save(buffered, format="JPEG")
+                img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                # Use LLM to analyze layout
+                res_str = analyze_layout_with_llm(img_base64)
+                # Convert LLM string response back to blocks if needed, 
+                # or just use it as a refinement step.
+                # For now, we still need YOLO blocks to feed into the pipeline
+                yolo_res = self.model.layout_model.batch_predict([img], 1)
+                images_layout_res += yolo_res
+                # TODO: Implement logic to merge LLM refined layout into yolo_res
+        else:
+            # Default: doclayout_yolo
+            logger.info(f"Using YOLO Layout backend (doclayout_yolo) — set MINERU_LAYOUT_BACKEND=surya to switch")
+            images_layout_res += self.model.layout_model.batch_predict(
+                pil_images, YOLO_LAYOUT_BASE_BATCH_SIZE
+            )
 
         if self.formula_enable:
             # 公式检测
@@ -210,10 +244,7 @@ class BatchAnalyze:
             # Process LightOnOCR tables directly
             if lighton_tables:
                 from mineru.model.ocr.lighton_ocr import LightOnOCR
-                lighton_ocr = LightOnOCR(
-                    server_url=os.getenv('LIGHTON_SERVER_URL', 'http://localhost:1234/v1/chat/completions'),
-                    model_name=os.getenv('LIGHTON_MODEL_NAME', 'lightonai/LightOnOCR-2-1B')
-                )
+                lighton_ocr = LightOnOCR()
                 for table_res_dict in tqdm(lighton_tables, desc="LightOnOCR Table"):
                     bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
                     html_result = lighton_ocr.recognize_table(bgr_image)

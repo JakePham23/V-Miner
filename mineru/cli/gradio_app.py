@@ -460,7 +460,11 @@ def main(ctx,
                         drop_list.extend(["vlm-http-client", "hybrid-http-client"])
                     backend = gr.Dropdown(drop_list, label=i18n("backend"), value=preferred_option, info=get_backend_info(preferred_option))
                 with gr.Row(visible=False) as client_options:
-                    url = gr.Textbox(label=i18n("server_url"), value='http://localhost:1234/v1/chat/completions', placeholder='http://localhost:1234/v1/chat/completions', info=i18n("server_url_info"))
+                    default_url = os.getenv('LIGHTON_SERVER_URL')
+                    if not default_url:
+                        api_base = os.getenv('OPENAI_API_BASE', 'http://localhost:1234/v1')
+                        default_url = f"{api_base.rstrip('/')}/chat/completions"
+                    url = gr.Textbox(label=i18n("server_url"), value=default_url, placeholder='http://localhost:1234/v1/chat/completions', info=i18n("server_url_info"))
                 with gr.Row(equal_height=True):
                     with gr.Column():
                         gr.Markdown(i18n("recognition_options"))

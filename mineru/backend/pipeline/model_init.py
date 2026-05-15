@@ -117,6 +117,24 @@ def ocr_model_init(det_db_box_thresh=0.3,
     - vi-paddle-ocr: Original PaddleOCR for Vietnamese
     - others: PaddleOCR (default)
     """
+    # --- Priority: check explicit MINERU_TEXT_BACKEND override ---
+    text_backend_env = os.getenv('MINERU_TEXT_BACKEND', '').lower()
+    if text_backend_env == 'lighton':
+        table_backend = os.getenv('MINERU_TABLE_BACKEND', 'lighton').lower()
+        image_backend = os.getenv('MINERU_IMAGE_BACKEND', 'lighton').lower()
+        logger.info(
+            f"Using Configurable Hybrid OCR: "
+            f"text={text_backend_env}, table={table_backend}, image={image_backend}"
+        )
+        from mineru.model.ocr.configurable_hybrid_ocr import ConfigurableHybridOCR
+        return ConfigurableHybridOCR(
+            text_backend=text_backend_env,
+            table_backend=table_backend,
+            image_backend=image_backend,
+            det_db_box_thresh=det_db_box_thresh,
+            det_db_unclip_ratio=det_db_unclip_ratio,
+        )
+
     # Route to appropriate OCR backend
     if lang == 'vi-light-ocr':
         # Hybrid: EasyOCR for text + LightOnOCR for tables (via LM Studio)

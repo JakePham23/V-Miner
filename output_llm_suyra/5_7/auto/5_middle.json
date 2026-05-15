@@ -1,0 +1,2570 @@
+{
+    "pdf_info": [
+        {
+            "preproc_blocks": [
+                {
+                    "type": "text",
+                    "bbox": [
+                        75,
+                        100,
+                        624,
+                        115
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                75,
+                                100,
+                                624,
+                                115
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        100,
+                                        624,
+                                        115
+                                    ],
+                                    "type": "text",
+                                    "content": "8. DỰ KIẾN KẾ HOẠCH GIẢNG DẠY, LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CHƯƠNG TRÌNH ĐÀO TẠO",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 0
+                        }
+                    ],
+                    "index": 0
+                },
+                {
+                    "type": "table",
+                    "bbox": [
+                        75,
+                        139,
+                        772,
+                        515
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                75,
+                                139,
+                                772,
+                                515
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        139,
+                                        772,
+                                        515
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                75,
+                                                139,
+                                                772,
+                                                515
+                                            ],
+                                            "score": 0.9981800317764282,
+                                            "html": "| STT / HỌC KỲ 1 | MÃ HỌC PHẦN / HỌC KỲ 1 | TÊN HỌC PHẦN / HỌC KỲ 1 | Loại HP / HỌC KỲ 1 | Số TC / HỌC KỲ 1 | SỐ TIẾT / LT / HỌC KỲ 1 | SỐ TIẾT / TH / HỌC KỲ 1 | SỐ TIẾT / BT/ĐT / HỌC KỲ 1 | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT / HỌC KỲ 1 | GHI CHÚ / HỌC KỲ 1 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | BAA00030 | Giáo dục quốc phòng – An ninh | BB | 4 |  |  |  |  |  |\n| 2 | BAA00021 | Thể dục 1 | BB | 2 | 15 | 30 | 0 |  |  |\n| 3 | ADD00031 | Anh văn 1 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 4 | MTH00003 | Vi tích phân 1B | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 5 | MTH00081 | Thực hành Vi tích phân 1B | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 6 | MTH00041 | Toán rời rạc | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 7 | MTH00086 | Thực hành Toán rời rạc | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 8 | CSC00004 | Nhập môn công nghệ thông tin | BB | 4 | 45 | 30 | 0 | 1.2.2, 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5, 1.3.6, 1.3.7, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.5, 3.1.1, 3.1.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4 |  |\n| 9 | CSC10001 | Nhập môn lập trình | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.7, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5 |  |\n| HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 |\n| 1 | BAA00022 | Thể dục 2 | BB | 2 | 15 | 30 | 0 |  |  |\n| 2 | ADD00032 | Anh văn 2 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 3 | BAA00004 | Pháp luật đại cương | BB | 3 | 45 | 0 | 0 | 2.1.2, 2.3.2, 2.3.3, 2.4.3, 3.1.1, 3.1.4, 3.2.1, 3.3.1 |  |",
+                                            "type": "table",
+                                            "image_path": "a98b99cfaede1f78c17312ad69a14989831b8a6436d2897d102b012fbf1de706.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 2,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        139,
+                                        772,
+                                        264.3333333333333
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        264.3333333333333,
+                                        772,
+                                        389.66666666666663
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        389.66666666666663,
+                                        772,
+                                        515.0
+                                    ],
+                                    "spans": [],
+                                    "index": 3
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 2
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        74,
+                        540,
+                        369,
+                        551
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                74,
+                                540,
+                                369,
+                                551
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        74,
+                                        540,
+                                        369,
+                                        551
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        720,
+                        536,
+                        765,
+                        546
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                720,
+                                536,
+                                765,
+                                546
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        720,
+                                        536,
+                                        765,
+                                        546
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 14/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 5
+                        }
+                    ],
+                    "index": 5
+                }
+            ],
+            "page_idx": 0,
+            "page_size": [
+                842,
+                595
+            ],
+            "discarded_blocks": [],
+            "para_blocks": [
+                {
+                    "type": "text",
+                    "bbox": [
+                        75,
+                        100,
+                        624,
+                        115
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                75,
+                                100,
+                                624,
+                                115
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        100,
+                                        624,
+                                        115
+                                    ],
+                                    "type": "text",
+                                    "content": "8. DỰ KIẾN KẾ HOẠCH GIẢNG DẠY, LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CHƯƠNG TRÌNH ĐÀO TẠO",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 0
+                        }
+                    ],
+                    "index": 0,
+                    "bbox_fs": [
+                        75,
+                        100,
+                        624,
+                        115
+                    ]
+                },
+                {
+                    "type": "table",
+                    "bbox": [
+                        75,
+                        139,
+                        772,
+                        515
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                75,
+                                139,
+                                772,
+                                515
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        139,
+                                        772,
+                                        515
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                75,
+                                                139,
+                                                772,
+                                                515
+                                            ],
+                                            "score": 0.9981800317764282,
+                                            "html": "| STT / HỌC KỲ 1 | MÃ HỌC PHẦN / HỌC KỲ 1 | TÊN HỌC PHẦN / HỌC KỲ 1 | Loại HP / HỌC KỲ 1 | Số TC / HỌC KỲ 1 | SỐ TIẾT / LT / HỌC KỲ 1 | SỐ TIẾT / TH / HỌC KỲ 1 | SỐ TIẾT / BT/ĐT / HỌC KỲ 1 | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT / HỌC KỲ 1 | GHI CHÚ / HỌC KỲ 1 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | BAA00030 | Giáo dục quốc phòng – An ninh | BB | 4 |  |  |  |  |  |\n| 2 | BAA00021 | Thể dục 1 | BB | 2 | 15 | 30 | 0 |  |  |\n| 3 | ADD00031 | Anh văn 1 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 4 | MTH00003 | Vi tích phân 1B | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 5 | MTH00081 | Thực hành Vi tích phân 1B | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 6 | MTH00041 | Toán rời rạc | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 7 | MTH00086 | Thực hành Toán rời rạc | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 8 | CSC00004 | Nhập môn công nghệ thông tin | BB | 4 | 45 | 30 | 0 | 1.2.2, 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5, 1.3.6, 1.3.7, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.5, 3.1.1, 3.1.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4 |  |\n| 9 | CSC10001 | Nhập môn lập trình | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.7, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5 |  |\n| HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 | HỌC KỲ 2 |\n| 1 | BAA00022 | Thể dục 2 | BB | 2 | 15 | 30 | 0 |  |  |\n| 2 | ADD00032 | Anh văn 2 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 3 | BAA00004 | Pháp luật đại cương | BB | 3 | 45 | 0 | 0 | 2.1.2, 2.3.2, 2.3.3, 2.4.3, 3.1.1, 3.1.4, 3.2.1, 3.3.1 |  |",
+                                            "type": "table",
+                                            "image_path": "a98b99cfaede1f78c17312ad69a14989831b8a6436d2897d102b012fbf1de706.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 2,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        139,
+                                        772,
+                                        264.3333333333333
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        264.3333333333333,
+                                        772,
+                                        389.66666666666663
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        389.66666666666663,
+                                        772,
+                                        515.0
+                                    ],
+                                    "spans": [],
+                                    "index": 3
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 2
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        74,
+                        540,
+                        369,
+                        551
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                74,
+                                540,
+                                369,
+                                551
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        74,
+                                        540,
+                                        369,
+                                        551
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4,
+                    "bbox_fs": [
+                        74,
+                        540,
+                        369,
+                        551
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        720,
+                        536,
+                        765,
+                        546
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                720,
+                                536,
+                                765,
+                                546
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        720,
+                                        536,
+                                        765,
+                                        546
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 14/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 5
+                        }
+                    ],
+                    "index": 5,
+                    "bbox_fs": [
+                        720,
+                        536,
+                        765,
+                        546
+                    ]
+                }
+            ]
+        },
+        {
+            "preproc_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        75,
+                        77,
+                        779,
+                        514
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                75,
+                                77,
+                                779,
+                                514
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        77,
+                                        779,
+                                        514
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                75,
+                                                77,
+                                                779,
+                                                514
+                                            ],
+                                            "score": 0.9854061603546143,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 4 | CHE00001 | Hóa đại cương 1 | TC | 3 | 30 | 0 | 30 | 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 5 | CHE00081 | Thực hành Hóa đại cương 1 | TC | 2 | 0 | 60 | 0 | 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 6 | BIO00001 | Sinh đại cương 1 | TC | 3 | 45 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | chọn 6TC (*) |\n| 7 | BIO00081 | Thực tập Sinh đại cương 1 | TC | 1 | 0 | 30 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | chọn 6TC (*) |\n| 8 | PHY00001 | Vật lý đại cương 1 (Cơ - Nhiệt) | TC | 3 | 45 | 0 | 0 | 1.1.2, 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 9 | PHY00081 | Thực hành Vật lý đại cương | TC | 2 | 0 | 60 | 0 | 1.1.2, 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 10 | MTH00004 | Vi tích phân 2B | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 11 | MTH00082 | Thực hành Vi tích phân 2B | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 12 | MTH00030 | Đại số tuyến tính | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 13 | MTH00083 | Thực hành Đại số tuyến tính | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 14 | CSC10002 | Kỹ thuật lập trình | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.7, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5 |  |\n| HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 |\n| 1 | ADD00033 | Anh văn 3 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 2 | CHE00002 | Hóa đại cương 2 | TC | 3 | 30 | 0 | 30 | 2.1.8, 2.3.1, 2.4.3 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 3 | CHE00082 | Thực hành Hóa đại cương 2 | TC | 2 | 0 | 60 | 0 | 2.1.8, 2.3.1, 2.4.3 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 4 | BIO00002 | Sinh đại cương 2 | TC | 3 | 45 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 5 | BIO00082 | Thực tập Sinh đại cương 2 | TC | 1 | 0 | 30 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 6 | PHY00002 | Vật lý đại cương 2 (Điện từ - Quang) | TC | 3 | 45 | 0 | 0 | 1.1.2, 2.1.8, 2.3.1, 2.4.3 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |",
+                                            "type": "table",
+                                            "image_path": "b8e94d1199453c941fdf905708fdd6519109b9a17da4cd70b857e10e504884cc.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        77,
+                                        779,
+                                        222.66666666666666
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        222.66666666666666,
+                                        779,
+                                        368.3333333333333
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        368.3333333333333,
+                                        779,
+                                        514.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        78,
+                        528,
+                        371,
+                        540
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                78,
+                                528,
+                                371,
+                                540
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        78,
+                                        528,
+                                        371,
+                                        540
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 202",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        722,
+                        527,
+                        770,
+                        537
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                722,
+                                527,
+                                770,
+                                537
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        722,
+                                        527,
+                                        770,
+                                        537
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 15/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        438,
+                        557,
+                        548,
+                        585
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                438,
+                                557,
+                                548,
+                                585
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        438,
+                                        557,
+                                        548,
+                                        585
+                                    ],
+                                    "type": "text",
+                                    "content": "上海浦东发展银行股份有限公司",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 5
+                        }
+                    ],
+                    "index": 5
+                }
+            ],
+            "page_idx": 1,
+            "page_size": [
+                842,
+                595
+            ],
+            "discarded_blocks": [],
+            "para_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        75,
+                        77,
+                        779,
+                        514
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                75,
+                                77,
+                                779,
+                                514
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        77,
+                                        779,
+                                        514
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                75,
+                                                77,
+                                                779,
+                                                514
+                                            ],
+                                            "score": 0.9854061603546143,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 4 | CHE00001 | Hóa đại cương 1 | TC | 3 | 30 | 0 | 30 | 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 5 | CHE00081 | Thực hành Hóa đại cương 1 | TC | 2 | 0 | 60 | 0 | 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 6 | BIO00001 | Sinh đại cương 1 | TC | 3 | 45 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | chọn 6TC (*) |\n| 7 | BIO00081 | Thực tập Sinh đại cương 1 | TC | 1 | 0 | 30 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | chọn 6TC (*) |\n| 8 | PHY00001 | Vật lý đại cương 1 (Cơ - Nhiệt) | TC | 3 | 45 | 0 | 0 | 1.1.2, 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 9 | PHY00081 | Thực hành Vật lý đại cương | TC | 2 | 0 | 60 | 0 | 1.1.2, 2.1.8, 2.3.1, 2.4.3 | chọn 6TC (*) |\n| 10 | MTH00004 | Vi tích phân 2B | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 11 | MTH00082 | Thực hành Vi tích phân 2B | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 12 | MTH00030 | Đại số tuyến tính | BB | 3 | 45 | 0 | 0 | 1.1.1, 2.3.1, 2.4.3 |  |\n| 13 | MTH00083 | Thực hành Đại số tuyến tính | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 |  |\n| 14 | CSC10002 | Kỹ thuật lập trình | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.7, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5 |  |\n| HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 | HỌC KỲ 3 |\n| 1 | ADD00033 | Anh văn 3 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 2 | CHE00002 | Hóa đại cương 2 | TC | 3 | 30 | 0 | 30 | 2.1.8, 2.3.1, 2.4.3 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 3 | CHE00082 | Thực hành Hóa đại cương 2 | TC | 2 | 0 | 60 | 0 | 2.1.8, 2.3.1, 2.4.3 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 4 | BIO00002 | Sinh đại cương 2 | TC | 3 | 45 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 5 | BIO00082 | Thực tập Sinh đại cương 2 | TC | 1 | 0 | 30 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |\n| 6 | PHY00002 | Vật lý đại cương 2 (Điện từ - Quang) | TC | 3 | 45 | 0 | 0 | 1.1.2, 2.1.8, 2.3.1, 2.4.3 | Nếu (*) chưa đủ 6TC thì chọn thêm học phần cho đủ 6TC |",
+                                            "type": "table",
+                                            "image_path": "b8e94d1199453c941fdf905708fdd6519109b9a17da4cd70b857e10e504884cc.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        75,
+                                        77,
+                                        779,
+                                        222.66666666666666
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        222.66666666666666,
+                                        779,
+                                        368.3333333333333
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        75,
+                                        368.3333333333333,
+                                        779,
+                                        514.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        78,
+                        528,
+                        371,
+                        540
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                78,
+                                528,
+                                371,
+                                540
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        78,
+                                        528,
+                                        371,
+                                        540
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 202",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3,
+                    "bbox_fs": [
+                        78,
+                        528,
+                        371,
+                        540
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        722,
+                        527,
+                        770,
+                        537
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                722,
+                                527,
+                                770,
+                                537
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        722,
+                                        527,
+                                        770,
+                                        537
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 15/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4,
+                    "bbox_fs": [
+                        722,
+                        527,
+                        770,
+                        537
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        438,
+                        557,
+                        548,
+                        585
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                438,
+                                557,
+                                548,
+                                585
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        438,
+                                        557,
+                                        548,
+                                        585
+                                    ],
+                                    "type": "text",
+                                    "content": "上海浦东发展银行股份有限公司",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 5
+                        }
+                    ],
+                    "index": 5,
+                    "bbox_fs": [
+                        438,
+                        557,
+                        548,
+                        585
+                    ]
+                }
+            ]
+        },
+        {
+            "preproc_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        72,
+                        87,
+                        776,
+                        526
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                72,
+                                87,
+                                776,
+                                526
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        526
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                72,
+                                                87,
+                                                776,
+                                                526
+                                            ],
+                                            "score": 0.996691107749939,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CDR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 7 | MTH00040 | Xác suất thống kê | BB | 3 | 45 | 0 | 0 | 1.1.1, 1.2.2, 2.3.1, 2.4.3 |  |\n| 8 | MTH00085 | Thực hành Xác suất thống kê | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.2.2, 1.3.7, 2.3.1, 2.4.3 |  |\n| 9 | MTH00050 | Toán học tổ hợp | BB | 4 | 45 | 30 | 0 | 1.1.1, 2.4.3, 2.4.5 |  |\n| 10 | CSC10004 | Cấu trúc dữ liệu và giải thuật | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.7, 2.1.1, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5 |  |\n| 11 | CSC10008 | Mạng máy tính | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.4, 1.3.6, 2.1.1, 2.2.1, 2.2.4, 2.3.1, 2.4.3, 2.4.5, 4.1.3, 4.3.2, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 5.3.2, 6.1.1, 6.1.2 |  |\n| HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 |\n| 1 | ADD00034 | Anh văn 4 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 2 | BAA00101 | Triết học Mác – Lênin | BB | 3 | 45 | 0 | 0 | 2.3.1, 2.3.3, 3.1.1, 3.1.3, 3.3.1 |  |\n| 3 | BAA00005 | Kinh tế đại cương | TC | 2 | 30 | 0 | 0 | 2.1.2, 2.1.7, 2.4.3, 3.1.1, 3.1.4, 3.2.1, 3.3.1 | chọn 01 học phần (2TC) |\n| 4 | BAA00006 | Tâm lý đại cương | TC | 2 | 30 | 0 | 0 | 2.1.1, 2.1.8, 2.3.2, 2.3.3 | chọn 01 học phần (2TC) |\n| 5 | BAA00007 | Phương pháp luận sáng tạo | TC | 2 | 30 | 0 | 0 | 2.1.3, 2.1.4, 2.1.8, 2.3.3, 2.4.3, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4 |  |\n| 6 | MTH00051 | Toán ứng dụng và thống kê | TC | 4 | 45 | 30 | 0 | 1.2.1, 1.3.1, 1.3.6, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.4.3, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 6.1.1 | chọn 01 học phần (4TC) |\n| 7 | MTH00052 | Phương pháp tính | TC | 4 | 45 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 | chọn 01 học phần (4TC) |\n| 8 | MTH00053 | Lý thuyết số | TC | 4 | 45 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 | chọn 01 học phần (4TC) |\n| 9 | CSC10003 | Phương pháp lập trình hướng đối tượng | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.7, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5, 3.1.1, 3.2.1, 3.2.2, 4.1.1, 4.1.2, 4.1.3, 4.1.4 |  |\n| 10 | CSC10006 | Cơ sở dữ liệu | BB | 4 | 45 | 30 | 0 | 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5, 1.3.7, 2.1.1, 2.1.8, 2.2.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.2, 4.2.3, 4.3.1, 4.3.2 |  |",
+                                            "type": "table",
+                                            "image_path": "737fa382c37fab5143f7792fcc51b13ce6fa0eaa46525043c683aaa20d361664.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        233.33333333333334
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        233.33333333333334,
+                                        776,
+                                        379.6666666666667
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        379.6666666666667,
+                                        776,
+                                        526.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        74,
+                        537,
+                        369,
+                        549
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                74,
+                                537,
+                                369,
+                                549
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        74,
+                                        537,
+                                        369,
+                                        549
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        716,
+                        536,
+                        763,
+                        546
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                716,
+                                536,
+                                763,
+                                546
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        716,
+                                        536,
+                                        763,
+                                        546
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 16/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4
+                }
+            ],
+            "page_idx": 2,
+            "page_size": [
+                842,
+                595
+            ],
+            "discarded_blocks": [],
+            "para_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        72,
+                        87,
+                        776,
+                        526
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                72,
+                                87,
+                                776,
+                                526
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        526
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                72,
+                                                87,
+                                                776,
+                                                526
+                                            ],
+                                            "score": 0.996691107749939,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CDR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 7 | MTH00040 | Xác suất thống kê | BB | 3 | 45 | 0 | 0 | 1.1.1, 1.2.2, 2.3.1, 2.4.3 |  |\n| 8 | MTH00085 | Thực hành Xác suất thống kê | BB | 1 | 0 | 30 | 0 | 1.1.1, 1.2.2, 1.3.7, 2.3.1, 2.4.3 |  |\n| 9 | MTH00050 | Toán học tổ hợp | BB | 4 | 45 | 30 | 0 | 1.1.1, 2.4.3, 2.4.5 |  |\n| 10 | CSC10004 | Cấu trúc dữ liệu và giải thuật | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.7, 2.1.1, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5 |  |\n| 11 | CSC10008 | Mạng máy tính | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.4, 1.3.6, 2.1.1, 2.2.1, 2.2.4, 2.3.1, 2.4.3, 2.4.5, 4.1.3, 4.3.2, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 5.3.2, 6.1.1, 6.1.2 |  |\n| HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 | HỌC KỲ 4 |\n| 1 | ADD00034 | Anh văn 4 | BB | 3 | 30 | 30 | 0 | 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4 | SV đạt chuẩn NN đầu ra được miễn học |\n| 2 | BAA00101 | Triết học Mác – Lênin | BB | 3 | 45 | 0 | 0 | 2.3.1, 2.3.3, 3.1.1, 3.1.3, 3.3.1 |  |\n| 3 | BAA00005 | Kinh tế đại cương | TC | 2 | 30 | 0 | 0 | 2.1.2, 2.1.7, 2.4.3, 3.1.1, 3.1.4, 3.2.1, 3.3.1 | chọn 01 học phần (2TC) |\n| 4 | BAA00006 | Tâm lý đại cương | TC | 2 | 30 | 0 | 0 | 2.1.1, 2.1.8, 2.3.2, 2.3.3 | chọn 01 học phần (2TC) |\n| 5 | BAA00007 | Phương pháp luận sáng tạo | TC | 2 | 30 | 0 | 0 | 2.1.3, 2.1.4, 2.1.8, 2.3.3, 2.4.3, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4 |  |\n| 6 | MTH00051 | Toán ứng dụng và thống kê | TC | 4 | 45 | 30 | 0 | 1.2.1, 1.3.1, 1.3.6, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.4.3, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 6.1.1 | chọn 01 học phần (4TC) |\n| 7 | MTH00052 | Phương pháp tính | TC | 4 | 45 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 | chọn 01 học phần (4TC) |\n| 8 | MTH00053 | Lý thuyết số | TC | 4 | 45 | 30 | 0 | 1.1.1, 1.3.7, 2.3.1, 2.4.3 | chọn 01 học phần (4TC) |\n| 9 | CSC10003 | Phương pháp lập trình hướng đối tượng | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.7, 2.1.4, 2.1.5, 2.3.1, 2.4.3, 2.4.5, 3.1.1, 3.2.1, 3.2.2, 4.1.1, 4.1.2, 4.1.3, 4.1.4 |  |\n| 10 | CSC10006 | Cơ sở dữ liệu | BB | 4 | 45 | 30 | 0 | 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5, 1.3.7, 2.1.1, 2.1.8, 2.2.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.2, 4.2.3, 4.3.1, 4.3.2 |  |",
+                                            "type": "table",
+                                            "image_path": "737fa382c37fab5143f7792fcc51b13ce6fa0eaa46525043c683aaa20d361664.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        233.33333333333334
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        233.33333333333334,
+                                        776,
+                                        379.6666666666667
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        379.6666666666667,
+                                        776,
+                                        526.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        74,
+                        537,
+                        369,
+                        549
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                74,
+                                537,
+                                369,
+                                549
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        74,
+                                        537,
+                                        369,
+                                        549
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3,
+                    "bbox_fs": [
+                        74,
+                        537,
+                        369,
+                        549
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        716,
+                        536,
+                        763,
+                        546
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                716,
+                                536,
+                                763,
+                                546
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        716,
+                                        536,
+                                        763,
+                                        546
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 16/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4,
+                    "bbox_fs": [
+                        716,
+                        536,
+                        763,
+                        546
+                    ]
+                }
+            ]
+        },
+        {
+            "preproc_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        78,
+                        74,
+                        782,
+                        520
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                78,
+                                74,
+                                782,
+                                520
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        78,
+                                        74,
+                                        782,
+                                        520
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                78,
+                                                74,
+                                                782,
+                                                520
+                                            ],
+                                            "score": 0.9425401091575623,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 11 | CSC10009 | Hệ thống máy tính | BB | 2 | 30 | 0 | 0 | 1.1.1, 1.1.3, 1.2.1, 1.2.2, 1.3.3, 1.3.7, 2.1.1, 2.2.1, 2.2.4, 2.3.2, 2.4.3, 2.4.5, 5.1.1, 5.2.2 |  |\n| 12 | CSC10121 | Kỹ năng mềm | TC | 3 | 30 | 30 | 0 | 1.3.7, 2.1.8, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4 | HP tự chọn chung Học kỳ hè năm 2 |\n| HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 |\n| 1 | BAA00102 | Kinh tế chính trị Mác – Lênin | BB | 2 | 30 | 0 | 0 | 2.3.1, 2.3.3, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | GEO00002 | Khoa học Trái đất | TC | 2 | 30 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1, 3.1.2, 3.3.1, 3.3.2 | chọn 01 học phần (2TC) |\n| 3 | ENV00001 | Môi trường đại cương | TC | 2 | 30 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1, 3.1.2, 3.3.1, 3.3.2 | chọn 01 học phần (2TC) |\n| 4 | ENV00003 | Con người và môi trường | TC | 2 | 30 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1, 3.1.2, 3.3.1, 3.3.2 | chọn 01 học phần (2TC) |\n| 5 | CSC10007 | Hệ điều hành | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.7, 2.1.7, 2.1.8, 2.2.1, 2.2.4, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.3.3 |  |\n| 6 | CSC13002 | Nhập môn công nghệ phần mềm | BB | 4 | 45 | 30 | 0 | 1.3.7, 2.1.1, 2.1.3, 2.1.4, 2.1.5, 2.1.7, 2.1.8, 2.1.9, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.4.1, 2.4.2, 2.4.3, 2.4.4, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1, 6.1.2, 6.1.3, 6.2.1, 6.2.2, 6.2.3, 6.3.1, 6.3.2 |  |\n| 7 | CSC10105 | Nhập môn tư duy thuật toán | TC | 4 | 45 | 30 | 0 | 1.3.1, 2.4.3, 2.4.5 | HP tự chọn chung |\n| 8 | CSC12002 | Cơ sở dữ liệu nâng cao | TC | 4 | 45 | 30 | 0 | 1.2.1, 1.3.1, 1.3.5, 1.4.1, 1.4.2, 2.1.4, 2.1.5, 2.1.8, 2.2.1, 2.2.2, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.2, 5.1.1, 5.2.1, 5.2.2, 5.3.1, 5.3.2, 6.1.2 |  |\n| 9 | CSC12003 | Hệ quản trị cơ sở dữ liệu | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.3.6, 1.4.2, 2.1.1, 2.2.2, 2.3.1, 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3 |  |\n| 10 | CSC12109 | Hệ thống thông tin doanh nghiệp | TC | 4 | 45 | 30 | 0 | 1.4.2, 1.4.3, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 3.2.1, 3.2.2, 3.2.3 |  |",
+                                            "type": "table",
+                                            "image_path": "17c38d98140f046cdebd120eebdf43784d1ced6034ed857dab04125a131a67d0.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        78,
+                                        74,
+                                        782,
+                                        222.66666666666666
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        78,
+                                        222.66666666666666,
+                                        782,
+                                        371.3333333333333
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        78,
+                                        371.3333333333333,
+                                        782,
+                                        520.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        79,
+                        528,
+                        374,
+                        540
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                79,
+                                528,
+                                374,
+                                540
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        79,
+                                        528,
+                                        374,
+                                        540
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        721,
+                        527,
+                        771,
+                        541
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                721,
+                                527,
+                                771,
+                                541
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        721,
+                                        527,
+                                        771,
+                                        541
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 17/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4
+                },
+                {
+                    "type": "image",
+                    "bbox": [
+                        414,
+                        560,
+                        520,
+                        582
+                    ],
+                    "blocks": [
+                        {
+                            "type": "image_body",
+                            "bbox": [
+                                414,
+                                560,
+                                520,
+                                582
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        414,
+                                        560,
+                                        520,
+                                        582
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                414,
+                                                560,
+                                                520,
+                                                582
+                                            ],
+                                            "score": 0.6075599193572998,
+                                            "type": "image",
+                                            "image_path": "aafcacaf532effaafec1096f6930382f9482536d84100e39b850c90348f85440.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 5,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        414,
+                                        560,
+                                        520,
+                                        582
+                                    ],
+                                    "spans": [],
+                                    "index": 5
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 5
+                }
+            ],
+            "page_idx": 3,
+            "page_size": [
+                842,
+                595
+            ],
+            "discarded_blocks": [],
+            "para_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        78,
+                        74,
+                        782,
+                        520
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                78,
+                                74,
+                                782,
+                                520
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        78,
+                                        74,
+                                        782,
+                                        520
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                78,
+                                                74,
+                                                782,
+                                                520
+                                            ],
+                                            "score": 0.9425401091575623,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 11 | CSC10009 | Hệ thống máy tính | BB | 2 | 30 | 0 | 0 | 1.1.1, 1.1.3, 1.2.1, 1.2.2, 1.3.3, 1.3.7, 2.1.1, 2.2.1, 2.2.4, 2.3.2, 2.4.3, 2.4.5, 5.1.1, 5.2.2 |  |\n| 12 | CSC10121 | Kỹ năng mềm | TC | 3 | 30 | 30 | 0 | 1.3.7, 2.1.8, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4 | HP tự chọn chung Học kỳ hè năm 2 |\n| HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 | HỌC KỲ 5 |\n| 1 | BAA00102 | Kinh tế chính trị Mác – Lênin | BB | 2 | 30 | 0 | 0 | 2.3.1, 2.3.3, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | GEO00002 | Khoa học Trái đất | TC | 2 | 30 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1, 3.1.2, 3.3.1, 3.3.2 | chọn 01 học phần (2TC) |\n| 3 | ENV00001 | Môi trường đại cương | TC | 2 | 30 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1, 3.1.2, 3.3.1, 3.3.2 | chọn 01 học phần (2TC) |\n| 4 | ENV00003 | Con người và môi trường | TC | 2 | 30 | 0 | 0 | 2.1.8, 2.3.1, 2.4.3, 3.1.1, 3.1.2, 3.3.1, 3.3.2 | chọn 01 học phần (2TC) |\n| 5 | CSC10007 | Hệ điều hành | BB | 4 | 45 | 30 | 0 | 1.2.1, 1.2.2, 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.7, 2.1.7, 2.1.8, 2.2.1, 2.2.4, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.3.3 |  |\n| 6 | CSC13002 | Nhập môn công nghệ phần mềm | BB | 4 | 45 | 30 | 0 | 1.3.7, 2.1.1, 2.1.3, 2.1.4, 2.1.5, 2.1.7, 2.1.8, 2.1.9, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.4.1, 2.4.2, 2.4.3, 2.4.4, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1, 6.1.2, 6.1.3, 6.2.1, 6.2.2, 6.2.3, 6.3.1, 6.3.2 |  |\n| 7 | CSC10105 | Nhập môn tư duy thuật toán | TC | 4 | 45 | 30 | 0 | 1.3.1, 2.4.3, 2.4.5 | HP tự chọn chung |\n| 8 | CSC12002 | Cơ sở dữ liệu nâng cao | TC | 4 | 45 | 30 | 0 | 1.2.1, 1.3.1, 1.3.5, 1.4.1, 1.4.2, 2.1.4, 2.1.5, 2.1.8, 2.2.1, 2.2.2, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.2, 5.1.1, 5.2.1, 5.2.2, 5.3.1, 5.3.2, 6.1.2 |  |\n| 9 | CSC12003 | Hệ quản trị cơ sở dữ liệu | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.3.6, 1.4.2, 2.1.1, 2.2.2, 2.3.1, 2.3.2, 2.4.1, 2.4.2, 2.4.3, 2.4.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3 |  |\n| 10 | CSC12109 | Hệ thống thông tin doanh nghiệp | TC | 4 | 45 | 30 | 0 | 1.4.2, 1.4.3, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 3.2.1, 3.2.2, 3.2.3 |  |",
+                                            "type": "table",
+                                            "image_path": "17c38d98140f046cdebd120eebdf43784d1ced6034ed857dab04125a131a67d0.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        78,
+                                        74,
+                                        782,
+                                        222.66666666666666
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        78,
+                                        222.66666666666666,
+                                        782,
+                                        371.3333333333333
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        78,
+                                        371.3333333333333,
+                                        782,
+                                        520.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        79,
+                        528,
+                        374,
+                        540
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                79,
+                                528,
+                                374,
+                                540
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        79,
+                                        528,
+                                        374,
+                                        540
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3,
+                    "bbox_fs": [
+                        79,
+                        528,
+                        374,
+                        540
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        721,
+                        527,
+                        771,
+                        541
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                721,
+                                527,
+                                771,
+                                541
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        721,
+                                        527,
+                                        771,
+                                        541
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 17/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4,
+                    "bbox_fs": [
+                        721,
+                        527,
+                        771,
+                        541
+                    ]
+                },
+                {
+                    "type": "image",
+                    "bbox": [
+                        414,
+                        560,
+                        520,
+                        582
+                    ],
+                    "blocks": [
+                        {
+                            "type": "image_body",
+                            "bbox": [
+                                414,
+                                560,
+                                520,
+                                582
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        414,
+                                        560,
+                                        520,
+                                        582
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                414,
+                                                560,
+                                                520,
+                                                582
+                                            ],
+                                            "score": 0.6075599193572998,
+                                            "type": "image",
+                                            "image_path": "aafcacaf532effaafec1096f6930382f9482536d84100e39b850c90348f85440.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 5,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        414,
+                                        560,
+                                        520,
+                                        582
+                                    ],
+                                    "spans": [],
+                                    "index": 5
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 5
+                }
+            ]
+        },
+        {
+            "preproc_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        72,
+                        87,
+                        776,
+                        526
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                72,
+                                87,
+                                776,
+                                526
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        526
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                72,
+                                                87,
+                                                776,
+                                                526
+                                            ],
+                                            "score": 0.9894682765007019,
+                                            "html": "| STT / HỌC KỲ 6 | MÃ HỌC PHẦN / HỌC KỲ 6 | TÊN HỌC PHẦN / HỌC KỲ 6 | Loại HP / HỌC KỲ 6 | Số TC / HỌC KỲ 6 | SỐ TIẾT / HỌC KỲ 6 | SỐ TIẾT / HỌC KỲ 6 | SỐ TIẾT / HỌC KỲ 6 | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT / HỌC KỲ 6 | GHI CHÚ / HỌC KỲ 6 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | BAA00103 | Chủ nghĩa xã hội khoa học | BB | 2 | 30 | 0 | 0 | 2.3.1, 2.3.3, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | CSC14003 | Cơ sở trí tuệ nhân tạo | BB | 4 | 45 | 30 | 0 | 2.1.7, 2.1.9, 2.2.2, 2.3.1, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 5.1.1, 5.1.2 |  |\n| 3 | CSC10102 | Kiến tập nghề nghiệp | TC | 2 | 15 | 30 | 0 | 2.1.7, 2.3.1, 2.3.2, 2.3.4, 2.4.2, 2.4.3, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4 | HP tự chọn chung |\n| 4 | CSC10103 | Khởi nghiệp | TC | 3 | 30 | 30 | 0 | 1.3.7, 2.1.1, 2.1.2, 2.1.3, 2.1.4, 2.1.5, 2.1.6, 2.1.7, 2.1.8, 2.1.9, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.5, 2.5.1, 2.5.2, 2.5.3, 2.5.4, 2.5.5, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 3.1.1, 3.1.2, 3.1.3, 3.1.4, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.2, 5.1.3 | HP tự chọn chung Học kỳ hè năm 3 |\n| 5 | CSC10104 | Quy hoạch tuyến tính | TC | 4 | 45 | 30 | 0 | 1.1.1, 1.2.1, 1.2.2 | HP tự chọn chung |\n| 6 | CSC10106 | Thuật toán tổ hợp và ứng dụng | TC | 4 | 45 | 30 | 0 | 1.2.2, 1.3.1, 2.4.3, 2.4.5 | HP tự chọn chung |\n| 7 | CSC10107 | Thực tập thực tế | TC | 4 | 30 | 60 | 0 | 1.3.7, 2.1.1, 2.1.2, 2.1.3, 2.1.4, 2.1.5, 2.1.6, 2.1.7, 2.1.8, 2.1.9, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.1, 2.4.2, 2.4.3, 2.4.4, 2.4.5, 3.1.1, 3.1.2, 3.1.3, 3.1.4, 3.2.1, 3.2.2, 3.2.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.2, 5.1.3 | HP tự chọn chung Học kỳ hè năm 3 |\n| 8 | CSC12001 | An toàn và bảo mật dữ liệu trong hệ thống thông tin | TC | 4 | 45 | 30 | 0 | 1.3.6, 1.3.7, 2.1.1, 2.2.2, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1, 6.1.2, 6.1.3, 6.2.1, 6.2.2, 6.2.3 |  |\n| 9 | CSC12004 | Phân tích thiết kế hệ thống thông tin | TC | 4 | 45 | 30 | 0 | 1.3.5, 2.1.4, 2.1.5, 2.1.9, 2.2.1, 2.2.2, 2.4.3, 2.4.5, 3.2.1, 3.2.2, 3.2.3, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.3.1, 4.3.2, 4.3.3, 5.1.1, 5.1.2, 5.1.3 |  |\n| 10 | CSC12103 | Chuyên đề Hệ quản trị cơ sở dữ liệu nâng cao | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.3.6, 1.4.2, 1.4.3, 2.1.1, 2.1.2, 2.1.3, 2.2.2, 2.3.1, 2.3.2, 2.4.3 |  |",
+                                            "type": "table",
+                                            "image_path": "30bf6c7c159c72555403d2f90d2487f00ed8f31af8ca58051c882203424ea2b1.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        233.33333333333334
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        233.33333333333334,
+                                        776,
+                                        379.6666666666667
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        379.6666666666667,
+                                        776,
+                                        526.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        74,
+                        540,
+                        369,
+                        551
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                74,
+                                540,
+                                369,
+                                551
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        74,
+                                        540,
+                                        369,
+                                        551
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        717,
+                        538,
+                        762,
+                        548
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                717,
+                                538,
+                                762,
+                                548
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        717,
+                                        538,
+                                        762,
+                                        548
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 18/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4
+                }
+            ],
+            "page_idx": 4,
+            "page_size": [
+                842,
+                595
+            ],
+            "discarded_blocks": [],
+            "para_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        72,
+                        87,
+                        776,
+                        526
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                72,
+                                87,
+                                776,
+                                526
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        526
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                72,
+                                                87,
+                                                776,
+                                                526
+                                            ],
+                                            "score": 0.9894682765007019,
+                                            "html": "| STT / HỌC KỲ 6 | MÃ HỌC PHẦN / HỌC KỲ 6 | TÊN HỌC PHẦN / HỌC KỲ 6 | Loại HP / HỌC KỲ 6 | Số TC / HỌC KỲ 6 | SỐ TIẾT / HỌC KỲ 6 | SỐ TIẾT / HỌC KỲ 6 | SỐ TIẾT / HỌC KỲ 6 | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT / HỌC KỲ 6 | GHI CHÚ / HỌC KỲ 6 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | BAA00103 | Chủ nghĩa xã hội khoa học | BB | 2 | 30 | 0 | 0 | 2.3.1, 2.3.3, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | CSC14003 | Cơ sở trí tuệ nhân tạo | BB | 4 | 45 | 30 | 0 | 2.1.7, 2.1.9, 2.2.2, 2.3.1, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 5.1.1, 5.1.2 |  |\n| 3 | CSC10102 | Kiến tập nghề nghiệp | TC | 2 | 15 | 30 | 0 | 2.1.7, 2.3.1, 2.3.2, 2.3.4, 2.4.2, 2.4.3, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 4.1.1, 4.1.2, 4.1.3, 4.1.4 | HP tự chọn chung |\n| 4 | CSC10103 | Khởi nghiệp | TC | 3 | 30 | 30 | 0 | 1.3.7, 2.1.1, 2.1.2, 2.1.3, 2.1.4, 2.1.5, 2.1.6, 2.1.7, 2.1.8, 2.1.9, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.5, 2.5.1, 2.5.2, 2.5.3, 2.5.4, 2.5.5, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 3.1.1, 3.1.2, 3.1.3, 3.1.4, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.2, 5.1.3 | HP tự chọn chung Học kỳ hè năm 3 |\n| 5 | CSC10104 | Quy hoạch tuyến tính | TC | 4 | 45 | 30 | 0 | 1.1.1, 1.2.1, 1.2.2 | HP tự chọn chung |\n| 6 | CSC10106 | Thuật toán tổ hợp và ứng dụng | TC | 4 | 45 | 30 | 0 | 1.2.2, 1.3.1, 2.4.3, 2.4.5 | HP tự chọn chung |\n| 7 | CSC10107 | Thực tập thực tế | TC | 4 | 30 | 60 | 0 | 1.3.7, 2.1.1, 2.1.2, 2.1.3, 2.1.4, 2.1.5, 2.1.6, 2.1.7, 2.1.8, 2.1.9, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.1, 2.4.2, 2.4.3, 2.4.4, 2.4.5, 3.1.1, 3.1.2, 3.1.3, 3.1.4, 3.2.1, 3.2.2, 3.2.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.2, 5.1.3 | HP tự chọn chung Học kỳ hè năm 3 |\n| 8 | CSC12001 | An toàn và bảo mật dữ liệu trong hệ thống thông tin | TC | 4 | 45 | 30 | 0 | 1.3.6, 1.3.7, 2.1.1, 2.2.2, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1, 6.1.2, 6.1.3, 6.2.1, 6.2.2, 6.2.3 |  |\n| 9 | CSC12004 | Phân tích thiết kế hệ thống thông tin | TC | 4 | 45 | 30 | 0 | 1.3.5, 2.1.4, 2.1.5, 2.1.9, 2.2.1, 2.2.2, 2.4.3, 2.4.5, 3.2.1, 3.2.2, 3.2.3, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.3.1, 4.3.2, 4.3.3, 5.1.1, 5.1.2, 5.1.3 |  |\n| 10 | CSC12103 | Chuyên đề Hệ quản trị cơ sở dữ liệu nâng cao | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.3.6, 1.4.2, 1.4.3, 2.1.1, 2.1.2, 2.1.3, 2.2.2, 2.3.1, 2.3.2, 2.4.3 |  |",
+                                            "type": "table",
+                                            "image_path": "30bf6c7c159c72555403d2f90d2487f00ed8f31af8ca58051c882203424ea2b1.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        72,
+                                        87,
+                                        776,
+                                        233.33333333333334
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        233.33333333333334,
+                                        776,
+                                        379.6666666666667
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        72,
+                                        379.6666666666667,
+                                        776,
+                                        526.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        74,
+                        540,
+                        369,
+                        551
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                74,
+                                540,
+                                369,
+                                551
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        74,
+                                        540,
+                                        369,
+                                        551
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3,
+                    "bbox_fs": [
+                        74,
+                        540,
+                        369,
+                        551
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        717,
+                        538,
+                        762,
+                        548
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                717,
+                                538,
+                                762,
+                                548
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        717,
+                                        538,
+                                        762,
+                                        548
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 18/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4,
+                    "bbox_fs": [
+                        717,
+                        538,
+                        762,
+                        548
+                    ]
+                }
+            ]
+        },
+        {
+            "preproc_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        77,
+                        75,
+                        777,
+                        519
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                77,
+                                75,
+                                777,
+                                519
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        77,
+                                        75,
+                                        777,
+                                        519
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                77,
+                                                75,
+                                                777,
+                                                519
+                                            ],
+                                            "score": 0.5749312043190002,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CDR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 11 | CSC12105 | Thương mại điện tử | TC | 4 | 45 | 30 | 0 | 1.2.2, 1.3.5, 1.3.6, 1.3.7, 2.2.1, 2.2.2, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 3.1.3, 5.1.1, 5.1.3, 5.2.2, 5.3.2, 5.3.3, 6.2.1 |  |\n| HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 |\n| 1 | BAA00104 | Lịch sử Đảng Cộng sản Việt Nam | BB | 2 | 30 | 0 | 0 | 2.3.1, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | CSC12005 | Phát triển ứng dụng hệ thống thông tin hiện đại | TC | 4 | 45 | 30 | 0 | 1.4.2, 1.4.3, 2.1.4, 2.1.5 |  |\n| 3 | CSC12106 | Tương tác người – máy | TC | 4 | 45 | 30 | 0 | 1.3.7, 1.4.3, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.1.1, 5.1.2, 5.1.3, 6.1.1, 6.1.2 |  |\n| 4 | CSC12110 | Phân tích dữ liệu ứng dụng | TC | 4 | 45 | 30 | 0 | 1.3.6, 1.4.1, 1.4.2, 1.4.3, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.4.3, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 5.3.2, 6.1.1, 6.1.2 |  |\n| 5 | CSC17106 | Xử lý phân tích dữ liệu trực tuyến | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.4.1, 1.4.3, 2.1.4, 2.1.5, 2.2.1, 2.2.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.3.2, 5.3.3 |  |\n| 6 | CSC10251 | Khóa luận tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1 |  |\n| 7 | CSC10252 | Thực tập tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.5, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.2, 5.3.3, 6.1.1 | chọn 01 phương án tốt nghiệp (10TC) (2*) |\n| 8 | CSC10204 | Thực tập dự án tốt nghiệp | TC | 6 | 0 | 0 | 180 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 6.1.1 | chọn 01 phương án tốt nghiệp (10TC) (2*) |\n| 9 | CSC12107 | Hệ thống thông tin phục vụ triệt kinh doanh | TC | 4 | 45 | 30 | 0 | 1.4.1, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.1.1, 5.1.2, 5.2.1, 5.3.2 | chọn 01 phương án tốt nghiệp (10TC) (2*) |",
+                                            "type": "table",
+                                            "image_path": "c59835ee7b3cf684c2387315f40abd962b5af442ba03bdb42569c810d8ba9eeb.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        77,
+                                        75,
+                                        777,
+                                        223.0
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        77,
+                                        223.0,
+                                        777,
+                                        371.0
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        77,
+                                        371.0,
+                                        777,
+                                        519.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        77,
+                        531,
+                        372,
+                        542
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                77,
+                                531,
+                                372,
+                                542
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        77,
+                                        531,
+                                        372,
+                                        542
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        717,
+                        527,
+                        768,
+                        537
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                717,
+                                527,
+                                768,
+                                537
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        717,
+                                        527,
+                                        768,
+                                        537
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 19/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        375,
+                        554,
+                        485,
+                        579
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                375,
+                                554,
+                                485,
+                                579
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        375,
+                                        554,
+                                        485,
+                                        579
+                                    ],
+                                    "type": "text",
+                                    "content": "TIEN HOC TONG HOP",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 5
+                        }
+                    ],
+                    "index": 5
+                }
+            ],
+            "page_idx": 5,
+            "page_size": [
+                842,
+                595
+            ],
+            "discarded_blocks": [],
+            "para_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        77,
+                        75,
+                        777,
+                        519
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                77,
+                                75,
+                                777,
+                                519
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        77,
+                                        75,
+                                        777,
+                                        519
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                77,
+                                                75,
+                                                777,
+                                                519
+                                            ],
+                                            "score": 0.5749312043190002,
+                                            "html": "| STT | MÃ HỌC PHẦN | TÊN HỌC PHẦN | Loại HP | Số TC | SỐ TIẾT / LT | SỐ TIẾT / TH | SỐ TIẾT / BT/ĐT | LIÊN KẾT GIỮA HỌC PHẦN VÀ CDR CTĐT | GHI CHÚ |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 11 | CSC12105 | Thương mại điện tử | TC | 4 | 45 | 30 | 0 | 1.2.2, 1.3.5, 1.3.6, 1.3.7, 2.2.1, 2.2.2, 2.3.1, 2.3.2, 2.4.3, 2.4.5, 3.1.3, 5.1.1, 5.1.3, 5.2.2, 5.3.2, 5.3.3, 6.2.1 |  |\n| HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 | HỌC KỲ 7 |\n| 1 | BAA00104 | Lịch sử Đảng Cộng sản Việt Nam | BB | 2 | 30 | 0 | 0 | 2.3.1, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | CSC12005 | Phát triển ứng dụng hệ thống thông tin hiện đại | TC | 4 | 45 | 30 | 0 | 1.4.2, 1.4.3, 2.1.4, 2.1.5 |  |\n| 3 | CSC12106 | Tương tác người – máy | TC | 4 | 45 | 30 | 0 | 1.3.7, 1.4.3, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.1.1, 5.1.2, 5.1.3, 6.1.1, 6.1.2 |  |\n| 4 | CSC12110 | Phân tích dữ liệu ứng dụng | TC | 4 | 45 | 30 | 0 | 1.3.6, 1.4.1, 1.4.2, 1.4.3, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1, 2.4.3, 2.4.5, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 5.3.2, 6.1.1, 6.1.2 |  |\n| 5 | CSC17106 | Xử lý phân tích dữ liệu trực tuyến | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.4.1, 1.4.3, 2.1.4, 2.1.5, 2.2.1, 2.2.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.3.2, 5.3.3 |  |\n| 6 | CSC10251 | Khóa luận tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1 |  |\n| 7 | CSC10252 | Thực tập tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.5, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.2, 5.3.3, 6.1.1 | chọn 01 phương án tốt nghiệp (10TC) (2*) |\n| 8 | CSC10204 | Thực tập dự án tốt nghiệp | TC | 6 | 0 | 0 | 180 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 6.1.1 | chọn 01 phương án tốt nghiệp (10TC) (2*) |\n| 9 | CSC12107 | Hệ thống thông tin phục vụ triệt kinh doanh | TC | 4 | 45 | 30 | 0 | 1.4.1, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.1.1, 5.1.2, 5.2.1, 5.3.2 | chọn 01 phương án tốt nghiệp (10TC) (2*) |",
+                                            "type": "table",
+                                            "image_path": "c59835ee7b3cf684c2387315f40abd962b5af442ba03bdb42569c810d8ba9eeb.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        77,
+                                        75,
+                                        777,
+                                        223.0
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        77,
+                                        223.0,
+                                        777,
+                                        371.0
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        77,
+                                        371.0,
+                                        777,
+                                        519.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        77,
+                        531,
+                        372,
+                        542
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                77,
+                                531,
+                                372,
+                                542
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        77,
+                                        531,
+                                        372,
+                                        542
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3,
+                    "bbox_fs": [
+                        77,
+                        531,
+                        372,
+                        542
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        717,
+                        527,
+                        768,
+                        537
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                717,
+                                527,
+                                768,
+                                537
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        717,
+                                        527,
+                                        768,
+                                        537
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 19/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4,
+                    "bbox_fs": [
+                        717,
+                        527,
+                        768,
+                        537
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        375,
+                        554,
+                        485,
+                        579
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                375,
+                                554,
+                                485,
+                                579
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        375,
+                                        554,
+                                        485,
+                                        579
+                                    ],
+                                    "type": "text",
+                                    "content": "TIEN HOC TONG HOP",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 5
+                        }
+                    ],
+                    "index": 5,
+                    "bbox_fs": [
+                        375,
+                        554,
+                        485,
+                        579
+                    ]
+                }
+            ]
+        },
+        {
+            "preproc_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        70,
+                        84,
+                        771,
+                        465
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                70,
+                                84,
+                                771,
+                                465
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        70,
+                                        84,
+                                        771,
+                                        465
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                70,
+                                                84,
+                                                771,
+                                                465
+                                            ],
+                                            "score": 0.9185491800308228,
+                                            "html": "| STT / HỌC KỲ 8 | MÃ HỌC PHẦN / HỌC KỲ 8 | TÊN HỌC PHẦN / HỌC KỲ 8 | Loại HP / HỌC KỲ 8 | Số TC / HỌC KỲ 8 | SỐ TIẾT / LT / HỌC KỲ 8 | SỐ TIẾT / TH / HỌC KỲ 8 | SỐ TIẾT / BT/ĐT / HỌC KỲ 8 | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT / HỌC KỲ 8 | GHI CHÚ / HỌC KỲ 8 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | BAA00003 | Tư tưởng Hồ Chí Minh | BB | 2 | 30 | 0 | 0 | 2.3.1, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | CSC10108 | Trực quan hóa dữ liệu | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.4.1, 1.4.2, 2.1.5, 2.2.2, 2.4.3, 2.4.5, 4.1.4 |  |\n| 3 | CSC12102 | Chuyên đề chọn lọc trong Hệ thống thông tin | TC | 4 | 45 | 30 | 0 | 1.4.1, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4 |  |\n| 4 | CSC17101 | Hệ thống tư vấn | TC | 4 | 45 | 30 | 0 | 1.4.3, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.1.1, 5.1.2, 5.2.1, 5.2.2 |  |\n| 5 | CSC10251 | Khóa luận tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 6 | CSC10252 | Thực tập tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.5, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.2, 5.3.3, 6.1.1 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 7 | CSC10204 | Thực tập dự án tốt nghiệp | TC | 6 | 0 | 0 | 180 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 6.1.1 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 8 | CSC12108 | Ứng dụng phân tán | TC | 4 | 45 | 30 | 0 | 1.4.3, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 9 | CSC12111 | Quản trị cơ sở dữ liệu hiện đại | TC | 4 | 45 | 30 | 0 | 1.4.1, 1.4.3, 2.1.4, 2.1.5, 2.2.1, 2.2.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4 |  |",
+                                            "type": "table",
+                                            "image_path": "3ad263ffa0fe372b6606ba461c17fde8d56135dc4ebed177f21a2dd6ad0fd790.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        70,
+                                        84,
+                                        771,
+                                        211.0
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        70,
+                                        211.0,
+                                        771,
+                                        338.0
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        70,
+                                        338.0,
+                                        771,
+                                        465.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        76,
+                        537,
+                        370,
+                        549
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                76,
+                                537,
+                                370,
+                                549
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        76,
+                                        537,
+                                        370,
+                                        549
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        720,
+                        536,
+                        766,
+                        546
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                720,
+                                536,
+                                766,
+                                546
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        720,
+                                        536,
+                                        766,
+                                        546
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 20/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4
+                }
+            ],
+            "page_idx": 6,
+            "page_size": [
+                842,
+                595
+            ],
+            "discarded_blocks": [],
+            "para_blocks": [
+                {
+                    "type": "table",
+                    "bbox": [
+                        70,
+                        84,
+                        771,
+                        465
+                    ],
+                    "blocks": [
+                        {
+                            "type": "table_body",
+                            "bbox": [
+                                70,
+                                84,
+                                771,
+                                465
+                            ],
+                            "group_id": 0,
+                            "lines": [
+                                {
+                                    "bbox": [
+                                        70,
+                                        84,
+                                        771,
+                                        465
+                                    ],
+                                    "spans": [
+                                        {
+                                            "bbox": [
+                                                70,
+                                                84,
+                                                771,
+                                                465
+                                            ],
+                                            "score": 0.9185491800308228,
+                                            "html": "| STT / HỌC KỲ 8 | MÃ HỌC PHẦN / HỌC KỲ 8 | TÊN HỌC PHẦN / HỌC KỲ 8 | Loại HP / HỌC KỲ 8 | Số TC / HỌC KỲ 8 | SỐ TIẾT / LT / HỌC KỲ 8 | SỐ TIẾT / TH / HỌC KỲ 8 | SỐ TIẾT / BT/ĐT / HỌC KỲ 8 | LIÊN KẾT GIỮA HỌC PHẦN VÀ CĐR CTĐT / HỌC KỲ 8 | GHI CHÚ / HỌC KỲ 8 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | BAA00003 | Tư tưởng Hồ Chí Minh | BB | 2 | 30 | 0 | 0 | 2.3.1, 3.1.1, 3.1.3, 3.3.1 |  |\n| 2 | CSC10108 | Trực quan hóa dữ liệu | TC | 4 | 45 | 30 | 0 | 1.3.5, 1.4.1, 1.4.2, 2.1.5, 2.2.2, 2.4.3, 2.4.5, 4.1.4 |  |\n| 3 | CSC12102 | Chuyên đề chọn lọc trong Hệ thống thông tin | TC | 4 | 45 | 30 | 0 | 1.4.1, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4 |  |\n| 4 | CSC17101 | Hệ thống tư vấn | TC | 4 | 45 | 30 | 0 | 1.4.3, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 5.1.1, 5.1.2, 5.2.1, 5.2.2 |  |\n| 5 | CSC10251 | Khóa luận tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 5.3.3, 6.1.1 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 6 | CSC10252 | Thực tập tốt nghiệp | TC | 10 | 0 | 0 | 300 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.5, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.2, 5.3.3, 6.1.1 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 7 | CSC10204 | Thực tập dự án tốt nghiệp | TC | 6 | 0 | 0 | 180 | 1.3.7, 1.4.1, 1.4.2, 1.4.3, 2.1.1, 2.1.3, 2.1.4, 2.1.7, 2.1.8, 2.2.2, 2.2.3, 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.4.3, 2.4.4, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2, 5.2.3, 5.3.1, 5.3.2, 6.1.1 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 8 | CSC12108 | Ứng dụng phân tán | TC | 4 | 45 | 30 | 0 | 1.4.3, 2.2.1, 2.2.2, 2.3.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4 | Nếu chọn Phương án 3 và (2*) chưa đủ 10TC thì chọn thêm học phần cho đủ 10TC |\n| 9 | CSC12111 | Quản trị cơ sở dữ liệu hiện đại | TC | 4 | 45 | 30 | 0 | 1.4.1, 1.4.3, 2.1.4, 2.1.5, 2.2.1, 2.2.2, 2.4.3, 2.4.5, 4.1.1, 4.1.2, 4.1.3, 4.1.4, 4.2.1, 4.2.2, 4.2.3, 4.2.4 |  |",
+                                            "type": "table",
+                                            "image_path": "3ad263ffa0fe372b6606ba461c17fde8d56135dc4ebed177f21a2dd6ad0fd790.jpg"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "index": 1,
+                            "virtual_lines": [
+                                {
+                                    "bbox": [
+                                        70,
+                                        84,
+                                        771,
+                                        211.0
+                                    ],
+                                    "spans": [],
+                                    "index": 0
+                                },
+                                {
+                                    "bbox": [
+                                        70,
+                                        211.0,
+                                        771,
+                                        338.0
+                                    ],
+                                    "spans": [],
+                                    "index": 1
+                                },
+                                {
+                                    "bbox": [
+                                        70,
+                                        338.0,
+                                        771,
+                                        465.0
+                                    ],
+                                    "spans": [],
+                                    "index": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "index": 1
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        76,
+                        537,
+                        370,
+                        549
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                76,
+                                537,
+                                370,
+                                549
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        76,
+                                        537,
+                                        370,
+                                        549
+                                    ],
+                                    "type": "text",
+                                    "content": "Chương trình đào tạo đại học chính quy Ngành Hệ thống thông tin – Khóa tuyển: 2023",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 3
+                        }
+                    ],
+                    "index": 3,
+                    "bbox_fs": [
+                        76,
+                        537,
+                        370,
+                        549
+                    ]
+                },
+                {
+                    "type": "text",
+                    "bbox": [
+                        720,
+                        536,
+                        766,
+                        546
+                    ],
+                    "lines": [
+                        {
+                            "bbox": [
+                                720,
+                                536,
+                                766,
+                                546
+                            ],
+                            "spans": [
+                                {
+                                    "bbox": [
+                                        720,
+                                        536,
+                                        766,
+                                        546
+                                    ],
+                                    "type": "text",
+                                    "content": "Trang 20/21",
+                                    "score": 0.9
+                                }
+                            ],
+                            "index": 4
+                        }
+                    ],
+                    "index": 4,
+                    "bbox_fs": [
+                        720,
+                        536,
+                        766,
+                        546
+                    ]
+                }
+            ]
+        }
+    ],
+    "_backend": "pipeline",
+    "_version_name": "2.7.5"
+}

@@ -1,0 +1,25 @@
+--- mineru/model/ocr/lighton_ocr.py
++++ mineru/model/ocr/lighton_ocr.py
+@@ -395,20 +395,19 @@
+         model_name: str = None,
+         timeout: int = 600,
+         **kwargs
+     ):
+-        self.server_url = (
++        api_base = os.getenv("OPENAI_API_BASE", "http://localhost:1234/v1")
++        api_key = os.getenv("OPENAI_API_KEY", "")
++        self.server_url = (
+             server_url
+-            or os.getenv("LIGHTON_SERVER_URL", "http://localhost:1234/v1/chat/completions")
++            or f"{api_base.rstrip('/')}/chat/completions"
+         )
+         self.model_name = (
+             model_name
+-            or os.getenv("LIGHTON_MODEL_NAME", "lightonocr")
++            or os.getenv("OPENAI_MODEL", "lightonocr")
+         )
+-        self.api_key = os.getenv("LIGHTON_API_KEY", "")
++        self.api_key = api_key
+         self.timeout = timeout
+ 
+         logger.info(f"Initialized LightOnOCR API: URL={self.server_url}")

@@ -46,7 +46,7 @@ def _get_html_text(html_fragment: str) -> str:
             .replace('&#8805;', '≥').replace('&#8804;', '≤')).strip()
 
 
-def _parse_section_to_grid(section_html: str) -> list[list[str]]:
+def _parse_section_to_grid(section_html: str, is_header: bool = False) -> list[list[str]]:
     rows_raw = re.findall(r'<tr[^>]*>(.*?)</tr>', section_html, re.IGNORECASE | re.DOTALL)
     if not rows_raw:
         return []
@@ -71,9 +71,11 @@ def _parse_section_to_grid(section_html: str) -> list[list[str]]:
 
             for c_off in range(colspan):
                 col = col_cursor + c_off
-                grid[row_idx][col] = text
+                # Replicate text only for headers so _merge_multirow_header works correctly.
+                # For body rows, only put text in the first cell to prevent repetition.
+                grid[row_idx][col] = text if is_header or c_off == 0 else ''
                 for r_off in range(1, rowspan):
-                    occupied[(row_idx + r_off, col)] = text
+                    occupied[(row_idx + r_off, col)] = ''
 
             col_cursor += colspan
 
@@ -98,8 +100,8 @@ def _parse_table_to_grid(html: str) -> tuple[list[list[str]], list[list[str]]]:
     if not thead_html and not tbody_html:
         tbody_html = html
 
-    header_rows = _parse_section_to_grid(thead_html) if thead_html else []
-    body_rows   = _parse_section_to_grid(tbody_html) if tbody_html else []
+    header_rows = _parse_section_to_grid(thead_html, is_header=True) if thead_html else []
+    body_rows   = _parse_section_to_grid(tbody_html, is_header=False) if tbody_html else []
 
     if not header_rows and body_rows:
         first_tr = re.search(r'<tr[^>]*>(.*?)</tr>', tbody_html, re.IGNORECASE | re.DOTALL)
@@ -393,22 +395,143 @@ class LightOnOCR:
         self,
         server_url: str = None,
         model_name: str = None,
-        timeout: int = 180,
+        timeout: int = 600,
         **kwargs
     ):
+        api_base = os.getenv("OPENAI_API_BASE", "http://localhost:1234/v1")
+        api_key = os.getenv("OPENAI_API_KEY", "")
         self.server_url = (
             server_url
-            or os.getenv("LIGHTON_SERVER_URL", "http://localhost:1234/v1/chat/completions")
+            or f"{api_base.rstrip('/')}/chat/completions"
         )
         self.model_name = (
             model_name
-            or os.getenv("LIGHTON_MODEL_NAME", "lightonocr")
+            or os.getenv("OPENAI_MODEL", "lightonocr")
         )
-        self.timeout   = timeout
-        self.drop_score = kwargs.get("drop_score", 0.5)
-        logger.info(f"Initialized LightOnOCR API: URL={self.server_url}")
+        self.api_key = api_key
+        self.timeout = timeout
+
+        logger.info(f"Initialized LightOnOCR API: URL={self.server_url}, Model={self.model_name}")
 
     # ── Internal helpers ──────────────────────────────────────────────────────
+
+    def _call_api(self, image: Union[np.ndarray, Image.Image], prompt: str) -> str:
+        """Gọi API với OpenAI SDK (giống Marker)."""
+        import openai
+        
+        base_url = self.server_url.replace("/chat/completions", "")
+        client = openai.OpenAI(api_key=self.api_key or "sk-dummy", base_url=base_url)
+
+        img_b64 = self._image_to_base64(image)
+        image_url = f"data:image/jpeg;base64,{img_b64}"
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+
+        import time
+        for attempt in range(3):
+            try:
+                response = client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    timeout=self.timeout,
+                    temperature=0.0
+                )
+                text = response.choices[0].message.content
+                if not text:
+                    logger.warning(f"LightOnOCR OpenAI: response 200 nhưng content rỗng.")
+                return text
+            except Exception as e:
+                logger.error(f"LightOnOCR OpenAI error (attempt {attempt+1}): {e}")
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+                else:
+                    return ""
+        return ""
+
+    def _call_api_structured(self, image: Union[np.ndarray, Image.Image], prompt: str, schema_fields: dict) -> dict:
+        """
+        Gọi API với Structured Output của OpenAI SDK (giống Marker).
+        """
+        import openai
+        from pydantic import create_model
+
+        base_url = self.server_url.replace("/chat/completions", "")
+        client = openai.OpenAI(api_key=self.api_key or "sk-dummy", base_url=base_url)
+
+        img_b64 = self._image_to_base64(image)
+        image_url = f"data:image/jpeg;base64,{img_b64}"
+
+        # Xây dựng JSON schema hint cho prompt (cho fallback)
+        import json
+        schema_example = {k: f"<{v}>" for k, v in schema_fields.items()}
+        json_instruction = (
+            f"\n\nRespond ONLY with a valid JSON object matching this schema:\n"
+            f"{json.dumps(schema_example, ensure_ascii=False, indent=2)}\n"
+            f"Do not include any text outside the JSON object."
+        )
+        full_prompt = prompt + json_instruction
+
+        type_mapping = {"str": str, "int": int, "float": float, "bool": bool}
+        fields = {k: (type_mapping.get(v, str), ...) for k, v in schema_fields.items()}
+        ResponseSchema = create_model("ResponseSchema", **fields)
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                    {"type": "text", "text": full_prompt},
+                ],
+            }
+        ]
+
+        import time
+        import re
+        for attempt in range(3):
+            try:
+                # Dùng beta.chat.completions.parse như Marker
+                response = client.beta.chat.completions.parse(
+                    model=self.model_name,
+                    messages=messages,
+                    timeout=self.timeout,
+                    response_format=ResponseSchema,
+                )
+                response_text = response.choices[0].message.content
+                try:
+                    return json.loads(response_text)
+                except json.JSONDecodeError:
+                    return response.parsed.dict() if hasattr(response, "parsed") and response.parsed else {}
+            except Exception as e:
+                logger.error(f"OpenAI structured inference failed: {e}. Fallback to regex extraction...")
+                try:
+                    # Fallback JSON extraction via chat.completions.create
+                    fallback_resp = client.chat.completions.create(
+                        model=self.model_name,
+                        messages=messages,
+                        timeout=self.timeout,
+                    )
+                    raw = fallback_resp.choices[0].message.content.strip()
+                    if raw.startswith("```"):
+                        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+                        raw = re.sub(r"\n?```$", "", raw)
+                    raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+                    m = re.search(r"\{.*\}", raw, re.DOTALL)
+                    if m:
+                        return json.loads(m.group(0))
+                except Exception as fallback_e:
+                    logger.error(f"Fallback JSON mode failed: {fallback_e}")
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+                
+        return {}
 
     def _to_numpy_rgb(self, image: Union[np.ndarray, Image.Image]) -> np.ndarray:
         """Chuẩn hóa về numpy RGB."""
@@ -432,57 +555,6 @@ class LightOnOCR:
         pil.save(buffered, format="JPEG", quality=95)
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-    def _call_api(self, image: Union[np.ndarray, Image.Image], prompt: str) -> str:
-        img_b64 = self._image_to_base64(image)
-
-        if "/api/" in self.server_url:
-            # Ollama style
-            payload = {
-                "model": self.model_name,
-                "messages": [{"role": "user", "content": prompt, "images": [img_b64]}],
-                "stream": False,
-            }
-            try:
-                r = requests.post(self.server_url, json=payload, timeout=self.timeout)
-                if r.status_code == 200:
-                    res  = r.json()
-                    text = res.get("response", res.get("message", {}).get("content", ""))
-                    if not text:
-                        logger.warning(f"LightOnOCR Ollama: response 200 nhưng content rỗng. raw={res}")
-                    return text
-                else:
-                    logger.error(f"LightOnOCR Ollama: HTTP {r.status_code} - {r.text[:200]}")
-            except Exception as e:
-                logger.error(f"LightOnOCR Ollama error: {e}")
-        else:
-            # LM Studio / OpenAI style
-            image_url = f"data:image/jpeg;base64,{img_b64}"
-            payload = {
-                "model": self.model_name,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text",      "text": prompt},
-                            {"type": "image_url", "image_url": {"url": image_url}},
-                        ],
-                    }
-                ],
-                "temperature": 0.0,
-                "max_tokens":  4096,
-            }
-            try:
-                r = requests.post(self.server_url, json=payload, timeout=self.timeout)
-                if r.status_code == 200:
-                    text = r.json()["choices"][0]["message"]["content"]
-                    if not text:
-                        logger.warning(f"LightOnOCR OpenAI: response 200 nhưng content rỗng. raw={r.json()}")
-                    return text
-                else:
-                    logger.error(f"LightOnOCR OpenAI: HTTP {r.status_code} - {r.text[:200]}")
-            except Exception as e:
-                logger.error(f"LightOnOCR OpenAI error: {e}")
-        return ""
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -531,8 +603,11 @@ class LightOnOCR:
         prompt = (
             "Extract the table from this image. "
             "Output ONLY a valid HTML <table> with <thead> and <tbody>. "
-            "Do not add any explanation or preamble. "
-            "Ensure Vietnamese text is accurate."
+            "CRITICAL RULES:\n"
+            "1. `<thead>` MUST ONLY contain the actual column titles. DO NOT put section/sub-headers (like 'HỌC KỲ 1') in `<thead>`.\n"
+            "2. Section sub-headers (like 'HỌC KỲ 1', 'HỌC KỲ 2' spanning multiple columns) MUST be placed inside `<tbody>` using `<td colspan=\"...\">`.\n"
+            "3. Keep the exact text as seen in the image. DO NOT append repeating suffixes to cells.\n"
+            "4. Output ONLY the raw HTML code. Do not add any markdown formatting (e.g. ```html)."
         )
         result = self._call_api(image, prompt)
         result = _clean_ocr_response(result, prompt).strip()

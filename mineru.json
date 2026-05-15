@@ -1,0 +1,8 @@
+{
+    "llm-aided-config": {
+        "api_key": "sk-gzbivvgvkzlfgbxddofzasbjfyaczptppxmliaghvgtyjexp",
+        "base_url": "https://api.siliconflow.com/v1",
+        "model": "Qwen/Qwen2-72B-Instruct",
+        "title_aided": true
+    }
+}
