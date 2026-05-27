@@ -582,13 +582,13 @@ class BatchAnalyze:
             # Process LightOnOCR tables directly
             if lighton_tables:
                 from mineru.model.ocr.lighton_ocr import LightOnOCR
-                lighton_ocr = LightOnOCR(
-                    server_url=os.getenv('LIGHTON_SERVER_URL', 'http://localhost:1234/v1/chat/completions'),
-                    model_name=os.getenv('LIGHTON_MODEL_NAME', 'lightonai/LightOnOCR-2-1B')
-                )
+                # Config đọc từ env vars (LLM_SERVICE / OPENAI_API_BASE / OPENAI_MODEL ...)
+                lighton_ocr = LightOnOCR()
                 for table_res_dict in tqdm(lighton_tables, desc="LightOnOCR Table"):
                     bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
-                    html_result = lighton_ocr.recognize_table(bgr_image)
+                    _tbl_lang = table_res_dict.get('lang', '')
+                    # Truyền lang để tự phát hiện bảng tiếng Việt và dùng VI prompt
+                    html_result = lighton_ocr.recognize_table(bgr_image, lang=_tbl_lang)
                     table_res_dict["table_res"]["html"] = html_result
                     # Mark as processed to skip regular table processing
                     table_res_dict["lighton_processed"] = True

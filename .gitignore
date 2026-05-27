@@ -58,3 +58,6 @@ _build/
 
 
 output/
+
+scratch/
+patch_ocr.py

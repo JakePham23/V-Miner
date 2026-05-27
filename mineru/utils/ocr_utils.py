@@ -353,9 +353,33 @@ def get_ocr_result_list(
             # logger.info(f"text: {text}, score: {score}")
             if score < OcrConfidence.min_confidence:  # 过滤低置信度的结果
                 continue
+            
+            # Trim the paste_x and paste_y padding if the box represents the entire crop region
+            # We leave a small margin (e.g. 4px) so that the coordinates are not too tight ("sát chữ quá")
+            if (abs(p1[0]) < 1e-2 and abs(p1[1]) < 1e-2 and 
+                abs(p3[0] - new_width) < 1e-2 and abs(p3[1] - new_height) < 1e-2):
+                margin = 4
+                p1 = [paste_x - margin, paste_y - margin]
+                p2 = [new_width - (paste_x - margin), paste_y - margin]
+                p3 = [new_width - (paste_x - margin), new_height - (paste_y - margin)]
+                p4 = [paste_x - margin, new_height - (paste_y - margin)]
+            
+            # Create img_crop if ocr_enable and we have valid points
+            if ocr_enable:
+                tmp_box = copy.deepcopy(np.array([p1, p2, p3, p4]).astype('float32'))
+                img_crop = get_rotate_crop_image(ori_im, tmp_box)
         else:
             p1, p2, p3, p4 = box_ocr_res
             text, score = "", 1
+
+            # Trim the paste_x and paste_y padding if the box represents the entire crop region
+            if (abs(p1[0]) < 1e-2 and abs(p1[1]) < 1e-2 and 
+                abs(p3[0] - new_width) < 1e-2 and abs(p3[1] - new_height) < 1e-2):
+                margin = 4
+                p1 = [paste_x - margin, paste_y - margin]
+                p2 = [new_width - (paste_x - margin), paste_y - margin]
+                p3 = [new_width - (paste_x - margin), new_height - (paste_y - margin)]
+                p4 = [paste_x - margin, new_height - (paste_y - margin)]
 
             if ocr_enable:
                 tmp_box = copy.deepcopy(np.array([p1, p2, p3, p4]).astype('float32'))

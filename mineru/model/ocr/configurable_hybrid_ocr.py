@@ -142,12 +142,8 @@ class ConfigurableHybridOCR:
         
         elif backend_name == 'lighton':
             from .lighton_ocr import LightOnOCR
-            # Only pass generic kwargs (no paddle-specific args)
-            return LightOnOCR(
-                server_url=os.getenv('LIGHTON_SERVER_URL', 'http://localhost:1234/v1/chat/completions'),
-                model_name=os.getenv('LIGHTON_MODEL_NAME', 'lightonai/LightOnOCR-2-1B'),
-                **self._generic_kwargs
-            )
+            # Đọc config qua lighton_config (hỗ trợ LLM_SERVICE, OPENAI_API_BASE, OPENAI_MODEL ...)
+            return LightOnOCR(**self._generic_kwargs)
         
         elif backend_name in ['rapidtable', 'default']:
             # Use MinerU's default RapidTable mechanism
