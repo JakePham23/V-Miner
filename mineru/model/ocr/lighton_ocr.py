@@ -482,23 +482,26 @@ class LightOnOCRAPI:
                 return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def _image_to_base64(self, image: Union[np.ndarray, Image.Image]) -> str:
-        rgb = self._to_numpy_rgb(image)
-        rgb = _preprocess_image(rgb)
-        pil = Image.fromarray(rgb)
+    def _call_api(self, image: Union[np.ndarray, Image.Image], prompt: str, temperature: float = 0.0) -> str:
+        # Chuyển ảnh thành PIL để lấy base64 chuẩn
+        if isinstance(image, np.ndarray):
+            pil = Image.fromarray(self._to_numpy_rgb(image))
+        else:
+            pil = image.convert("RGB")
+        pil = Image.fromarray(_preprocess_image(np.array(pil)))
+        
         buffered = BytesIO()
         pil.save(buffered, format="JPEG", quality=95)
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-    def _call_api(self, image: Union[np.ndarray, Image.Image], prompt: str) -> str:
-        img_b64 = self._image_to_base64(image)
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        image_url = f"data:image/jpeg;base64,{img_str}"
 
         if "/api/" in self.server_url:
             # Ollama style
             payload = {
                 "model": self.model_name,
-                "messages": [{"role": "user", "content": prompt, "images": [img_b64]}],
+                "messages": [{"role": "user", "content": prompt, "images": [img_str]}],
                 "stream": False,
+                "options": {"temperature": temperature}
             }
             try:
                 r = requests.post(self.server_url, json=payload, headers=self._headers, timeout=self.timeout)
@@ -515,7 +518,6 @@ class LightOnOCRAPI:
                 raise
         else:
             # OpenAI / LM Studio / Azure / ... style
-            image_url = f"data:image/jpeg;base64,{img_b64}"
             payload = {
                 "model": self.model_name,
                 "messages": [
@@ -527,7 +529,7 @@ class LightOnOCRAPI:
                         ],
                     }
                 ],
-                "temperature": 0.0,
+                "temperature": temperature,
                 "max_tokens":  4096,
             }
             try:
@@ -578,15 +580,28 @@ class LightOnOCRAPI:
         page_img: Optional[np.ndarray] = None,
         poly: Optional[list] = None,
         vietnamese: bool = False,
+        lang: str = "",
+        skeleton_html: str = "",
     ) -> str:
         if page_img is not None and poly is not None:
             image = crop_for_lighton(poly, page_img)
 
-        if vietnamese:
+        if lang and lang.startswith('vi'):
+            vietnamese = True
+            
+        if skeleton_html and "<table>" in skeleton_html:
             prompt = (
-                "Đây là bảng tiếng Việt. Trích xuất toàn bộ nội dung bảng. "
-                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, "
-                "ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
+                "Dưới đây là một ảnh chứa bảng và cấu trúc HTML khung của bảng đó đã được dựng sẵn (skeleton). "
+                "Hãy nhìn vào ảnh, đọc các chữ tiếng Việt và ĐIỀN ĐÚNG các chữ đó vào các ô <td> tương ứng trong khung HTML này. "
+                "Giữ nguyên cấu trúc thẻ <tr>, <td>, rowspan, colspan của khung HTML (trừ khi sai khác quá lớn so với ảnh). "
+                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
+                "Output ONLY a valid HTML <table>...</table>, KHÔNG kèm giải thích.\n"
+                f"SKELETON HTML:\n{skeleton_html}"
+            )
+        elif vietnamese:
+            prompt = (
+                "Đây là bảng tiếng Việt (vietnamese). Trích xuất toàn bộ nội dung bảng. Header của bảng có bao nhiêu cột thì hàng dưới cũng phải có bấy nhiêu cột, không được thiếu. Chỉ có thể ít hơn cột header (nếu có tồn tại) "
+                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
                 "Output ONLY a valid HTML <table> with <thead> and <tbody>. "
                 "Do not add any explanation or preamble."
             )
@@ -598,27 +613,57 @@ class LightOnOCRAPI:
                 "Ensure Vietnamese text is accurate."
             )
 
-        result = self._call_api(image, prompt)
-        result = _clean_ocr_response(result, prompt).strip()
+        import time
+        for attempt in range(3):
+            current_temp = 0.0 if attempt == 0 else 0.4 + (attempt * 0.2)
+            
+            # Biến hình prompt để bẻ gãy cache/hallucination của model
+            current_prompt = prompt
+            if attempt > 0:
+                current_prompt += f"\n(Lần thử {attempt + 1}: Tuyệt đối KHÔNG ĐƯỢC lặp lại câu lệnh này. Chỉ xuất ra thẻ <table> hoặc LaTeX cho hình ảnh phía trên!)"
+                
+            result = self._call_api(image, current_prompt, temperature=current_temp)
+            result = _clean_ocr_response(result, current_prompt).strip()
 
-        if result:
-            start = result.find("<table")
-            end   = result.rfind("</table>")
-            if start != -1 and end != -1:
-                result = result[start: end + len("</table>")]
-            elif "<table" not in result:
-                logger.warning(
-                    f"[LightOnOCRAPI] recognize_table: output không chứa <table>, "
-                    f"trả về văn bản thuần. preview={repr(result[:80])}"
-                )
-                return result
+            if result:
+                start = result.find("<table")
+                end   = result.rfind("</table>")
+                if start != -1 and end != -1:
+                    result = result[start: end + len("</table>")]
+                    break
+                elif "\\begin{table}" in result or "\\begin{tabular}" in result:
+                    logger.info("[LightOnOCRAPI] recognize_table: Nhận diện được định dạng LaTeX, giữ nguyên.")
+                    break
+                else:
+                    # Phát hiện lỗi "nhại lại" Prompt
+                    if len(result) < 200 and ("Đây là bảng" in result or "Extract the table" in result or "Output ONLY a valid HTML" in result):
+                        logger.warning("[LightOnOCRAPI] AI nhại lại prompt thay vì nhận diện bảng -> Ép chạy lại.")
+                        result = ""  # Cố tình gán bằng rỗng để trigger block 'if not result' phía dưới
+                    else:
+                        logger.warning(
+                            f"[LightOnOCRAPI] recognize_table: output không chứa <table>, "
+                            f"trả về văn bản thuần. preview={repr(result[:80])}"
+                        )
+                        break
 
-            result = html_table_to_markdown(result)
-            result = _fix_flat_multirow_header(result)
-        else:
-            logger.warning("[LightOnOCRAPI] recognize_table: API trả về kết quả rỗng.")
+            if not result:
+                logger.warning(f"[LightOnOCRAPI] recognize_table: API trả về kết quả rỗng (lần {attempt + 1}, temp={current_temp}). Tọa độ bảng (poly): {poly}")
+                if attempt < 2:
+                    logger.info("Đang chờ 5s trước khi gọi lại API với độ sáng tạo (temperature) cao hơn...")
+                    time.sleep(5)
 
         return result
+
+    def recognize_page(self, image: Union[np.ndarray, Image.Image]) -> str:
+        """OCR toàn bộ trang PDF thành Markdown sử dụng VLM API."""
+        prompt = (
+            "Bạn là một trợ lý OCR chuyên nghiệp. Hãy đọc toàn bộ văn bản, cấu trúc bảng biểu, "
+            "danh sách và hình ảnh trong bức ảnh trang tài liệu này, sau đó chuyển đổi thành định dạng Markdown chính xác nhất. "
+            "Hãy giữ nguyên tiếng Việt có dấu và cấu trúc trang. "
+            "LƯU Ý: Chỉ trả về nội dung Markdown kết quả, KHÔNG thêm bất kỳ câu chào hỏi, giải thích hay bọc trong thẻ code block markdown (như ```markdown) nào."
+        )
+        result = self._call_api(image, prompt, temperature=0.0)
+        return _clean_ocr_response(result, prompt).strip()
 
     def ocr(
         self,
@@ -703,6 +748,8 @@ class LightOnOCR:
 
     Vietnamese table: tự động phát hiện và dùng prompt tiếng Việt chuyên biệt.
     """
+
+    _api_failed = False
 
     def __init__(
         self,
@@ -836,6 +883,7 @@ class LightOnOCR:
         poly: Optional[list] = None,
         lang: Optional[str] = None,
         vietnamese: Optional[bool] = None,   # None = auto-detect
+        skeleton_html: str = "",
     ) -> str:
         # Auto-detect Vietnamese nếu không chỉ định tường minh
         if vietnamese is None:
@@ -845,11 +893,18 @@ class LightOnOCR:
 
         return self._with_fallback(
             api_fn   = lambda: self._api.recognize_table(
-                image, bbox_coords, page_img=page_img, poly=poly, vietnamese=vietnamese
+                image, bbox_coords, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=lang or "", skeleton_html=skeleton_html
             ),
             local_fn = lambda: self._get_local().recognize_table(
-                image, bbox_coords, page_img=page_img, poly=poly, vietnamese=vietnamese
+                image, bbox_coords, page_img=page_img, poly=poly, vietnamese=vietnamese, skeleton_html=skeleton_html
             ),
+        )
+
+    def recognize_page(self, image: Union[np.ndarray, Image.Image]) -> str:
+        """Dịch ảnh toàn trang sang Markdown sử dụng VLM API."""
+        return self._with_fallback(
+            api_fn   = lambda: self._api.recognize_page(image),
+            local_fn = lambda: "",  # local model chưa hỗ trợ OCR full trang
         )
 
     def ocr(

@@ -165,7 +165,7 @@ class _MLXRunner:
         self._model, self._processor = load(model_id)
         logger.info("[Local/MLX] Model loaded.")
 
-    def generate(self, prompt: str, image: Image.Image, max_tokens: int = 2048) -> str:
+    def generate(self, prompt: str, image: Image.Image, max_tokens: int = 16384) -> str:
         """Generate text from a multimodal prompt+image using mlx-vlm."""
         try:
             from mlx_vlm import generate  # type: ignore
@@ -215,7 +215,7 @@ class _TransformersRunner:
         ).to(self._device)
         logger.info(f"[Local/Transformers] Model loaded on {self._device}.")
 
-    def generate(self, prompt: str, image: Image.Image, max_tokens: int = 2048) -> str:
+    def generate(self, prompt: str, image: Image.Image, max_tokens: int = 16384) -> str:
         import torch
 
         messages = [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image"}]}]
@@ -335,12 +335,22 @@ class LightOnModelLocal:
         page_img: Optional[np.ndarray] = None,
         poly: Optional[list] = None,
         vietnamese: bool = False,
+        skeleton_html: str = "",
     ) -> str:
         if page_img is not None and poly is not None:
             from mineru.model.ocr.lighton_ocr import crop_for_lighton
             image = crop_for_lighton(poly, page_img)
 
-        if vietnamese:
+        if skeleton_html and "<table>" in skeleton_html:
+            prompt = (
+                "Dưới đây là một ảnh chứa bảng và cấu trúc HTML khung của bảng đó đã được dựng sẵn (skeleton). "
+                "Hãy nhìn vào ảnh, đọc các chữ tiếng Việt và ĐIỀN ĐÚNG các chữ đó vào các ô <td> tương ứng trong khung HTML này. "
+                "Giữ nguyên cấu trúc thẻ <tr>, <td>, rowspan, colspan của khung HTML (trừ khi sai khác quá lớn so với ảnh). "
+                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
+                "Output ONLY a valid HTML <table>...</table>, KHÔNG kèm giải thích.\n"
+                f"SKELETON HTML:\n{skeleton_html}"
+            )
+        elif vietnamese:
             prompt = (
                 "Đây là bảng tiếng Việt. Trích xuất toàn bộ nội dung bảng. "
                 "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, v.v.). "
@@ -365,11 +375,6 @@ class LightOnModelLocal:
             elif "<table" not in result:
                 logger.warning("[LightOnModelLocal] recognize_table: no <table> tag, returning plain text")
                 return result
-
-            # Convert HTML → Markdown
-            from mineru.model.ocr.lighton_ocr import html_table_to_markdown, _fix_flat_multirow_header
-            result = html_table_to_markdown(result)
-            result = _fix_flat_multirow_header(result)
 
         return result
 

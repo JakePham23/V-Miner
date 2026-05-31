@@ -437,6 +437,22 @@ class BatchAnalyze:
         # 清理显存
         clean_vram(self.model.device, vram_threshold=8)
 
+        # Adapt PP-DocLayoutV2 format to YOLO format
+        use_pp = os.getenv('USE_PP_LAYOUT', '0')
+        if use_pp == '1':
+            PP_TO_YOLO_MAP = {
+                0: 1, 1: 1, 2: 2, 3: 3, 4: 1, 5: 8, 6: 0, 7: 4, 8: 2, 9: 2, 10: 1,
+                11: 9, 12: 2, 13: 2, 14: 3, 15: 2, 16: 2, 17: 0, 18: 1, 19: 1, 
+                20: 2, 21: 5, 22: 1, 23: 1, 24: 101
+            }
+            for page_layout_res in images_layout_res:
+                for block in page_layout_res:
+                    if "poly" not in block and "bbox" in block:
+                        b = block["bbox"]
+                        block["poly"] = [b[0], b[1], b[2], b[1], b[2], b[3], b[0], b[3]]
+                    if "category_id" not in block and "cls_id" in block:
+                        block["category_id"] = PP_TO_YOLO_MAP.get(block["cls_id"], 1)
+
         if self.formula_enable:
             images_mfd_res = []
             for layout_res in images_layout_res:
@@ -470,6 +486,47 @@ class BatchAnalyze:
                 layout_res[:] = [res for res in layout_res if res.get("label") != "inline_formula"]
 
 
+
+        # ====== POST-PROCESSING: Fix broken table continuations ======
+        # category_id thực tế: text=1, table=5 (theo DocLayout/YOLO model)
+        TABLE_CAT_IDS = {5, 3}   # 5=table (DocLayout), 3=table (YOLO fallback)
+        TEXT_CAT_IDS  = {1}      # 1=text
+
+        for index in range(1, len(np_images)):
+            prev_layout = images_layout_res[index - 1]
+            curr_layout = images_layout_res[index]
+
+            if not prev_layout or not curr_layout:
+                continue
+
+            # Chỉ giữ lại các khối nội dung chính (Text/Table), bỏ qua footers, headers, page numbers
+            prev_content = [b for b in prev_layout if b.get('category_id') in (TABLE_CAT_IDS | TEXT_CAT_IDS)]
+            curr_content = [b for b in curr_layout if b.get('category_id') in (TABLE_CAT_IDS | TEXT_CAT_IDS)]
+
+            if not prev_content or not curr_content:
+                continue
+
+            # Sắp xếp các block theo trục Y (từ trên xuống dưới)
+            prev_sorted = sorted(prev_content, key=lambda b: b.get('poly', b.get('bbox', [0,0,0,0]))[1])
+            curr_sorted = sorted(curr_content, key=lambda b: b.get('poly', b.get('bbox', [0,0,0,0]))[1])
+
+            last_block_prev = prev_sorted[-1]
+            first_block_curr = curr_sorted[0]
+
+            prev_cat = last_block_prev.get('category_id', -1)
+            curr_cat  = first_block_curr.get('category_id', -1)
+
+            # Nếu khối CUỐI trang trước là Table VÀ khối ĐẦU trang này là Text
+            # => phần đuôi bảng bị vắt sang trang, ép lại thành Table
+            if prev_cat in TABLE_CAT_IDS and curr_cat in TEXT_CAT_IDS:
+                first_block_curr['category_id'] = prev_cat   # giữ đúng loại table id
+                first_block_curr['label'] = 'table'
+                logger.info(
+                    f"Layout Post-process [page {index+1}]: "
+                    f"Chuyển block đầu trang Text(id={curr_cat}) -> Table(id={prev_cat}) "
+                    f"vì trang trước kết thúc bằng Table"
+                )
+        # =============================================================
 
         ocr_res_list_all_page = []
         table_res_list_all_page = []
@@ -579,8 +636,10 @@ class BatchAnalyze:
 
 
             
-            # Process LightOnOCR tables directly
-            if lighton_tables:
+            use_wired_skeleton = os.environ.get("USE_WIRED_TABLE_SKELETON", "0") == "1"
+            
+            # Process LightOnOCR tables directly IF NOT using skeleton mode
+            if lighton_tables and not use_wired_skeleton:
                 from mineru.model.ocr.lighton_ocr import LightOnOCR
                 # Config đọc từ env vars (LLM_SERVICE / OPENAI_API_BASE / OPENAI_MODEL ...)
                 lighton_ocr = LightOnOCR()
@@ -668,11 +727,7 @@ class BatchAnalyze:
                     ocr_result = sorted_boxes(ocr_result)
                 # 构造需要 OCR 识别的图片字典，包括cropped_img, dt_box, table_id，并按照语言进行分组
                 for dt_box in ocr_result:
-<<<<<<< HEAD
-                    rec_img_lang_group[table_res_dict["lang"]].append(
-=======
                     rec_img_lang_group[_lang].append(
->>>>>>> 6433a2ce (updating process image and convert html layout to markdown)
                         {
                             "cropped_img": get_rotate_crop_image_for_text_rec(
                                 bgr_image, np.asarray(dt_box, dtype=np.float32)
@@ -686,15 +741,23 @@ class BatchAnalyze:
             for _lang, rec_img_list in rec_img_lang_group.items():
                 if not rec_img_list:
                     continue
+                # Tạm gỡ MINERU_TEXT_BACKEND để ép lấy mô hình PaddleOCR (tránh bị LightOnOCR chen ngang)
+                old_backend = os.environ.get("MINERU_TEXT_BACKEND")
+                if old_backend:
+                    del os.environ["MINERU_TEXT_BACKEND"]
                 ocr_engine = atom_model_manager.get_atom_model(
                     atom_model_name=AtomicModel.OCR,
                     det_db_box_thresh=0.5,
                     det_db_unclip_ratio=1.6,
-                    lang=_lang,
+                    lang="vi-paddle-ocr" if "vi" in _lang else _lang,
                     enable_merge_det_boxes=False,
                 )
+                
+                if old_backend:
+                    os.environ["MINERU_TEXT_BACKEND"] = old_backend
+                
                 cropped_img_list = [item["cropped_img"] for item in rec_img_list]
-                ocr_res_list = ocr_engine.ocr(cropped_img_list, det=False, tqdm_enable=True, tqdm_desc=f"Table-ocr rec {_lang}")[0]
+                ocr_res_list = ocr_engine.ocr(cropped_img_list, det=False, tqdm_enable=True, tqdm_desc=f"Table-cells OCR ({_lang})")[0]
                 # 按照 table_id 将识别结果进行回填
                 for img_dict, ocr_res in zip(rec_img_list, ocr_res_list):
                     ocr_text = self._normalize_table_ocr_rec_text(ocr_res[0])
@@ -779,6 +842,19 @@ class BatchAnalyze:
                     start_index = html_code.find("<table>")
                     end_index = html_code.rfind("</table>") + len("</table>")
                     table_res_dict["table_res"]["html"] = html_code[start_index:end_index]
+                    
+            if use_wired_skeleton and lighton_tables:
+                from mineru.model.ocr.lighton_ocr import LightOnOCR
+                lighton_ocr = LightOnOCR()
+                
+                model_name = os.environ.get("OPENAI_MODEL", "LLM OCR").split("/")[-1]
+                for table_res_dict in tqdm(lighton_tables, desc=f"{model_name} (with Skeleton)"):
+                    bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
+                    _tbl_lang = table_res_dict.get('lang', '')
+                    skeleton_html = table_res_dict["table_res"].get("html", "")
+                    
+                    html_result = lighton_ocr.recognize_table(bgr_image, lang=_tbl_lang, skeleton_html=skeleton_html)
+                    table_res_dict["table_res"]["html"] = html_result
 
 
         # OCR det

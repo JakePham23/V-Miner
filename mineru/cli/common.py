@@ -698,6 +698,14 @@ def do_parse(
             f_dump_model_output, f_dump_orig_pdf, f_dump_content_list, f_make_md_mode,
             client_side_output_generation=client_side_output_generation,
         )
+    elif backend == "vlm-api":
+        from mineru.backend.vlm.vlm_api_processor import process_vlm_api
+        process_vlm_api(
+            output_dir, pdf_file_names, pdf_bytes_list,
+            f_draw_layout_bbox, f_draw_span_bbox, f_dump_md, f_dump_middle_json,
+            f_dump_model_output, f_dump_orig_pdf, f_dump_content_list, f_make_md_mode,
+            server_url, **kwargs
+        )
     else:
         if backend.startswith("vlm-"):
             backend = backend[4:]
@@ -797,6 +805,14 @@ async def aio_do_parse(
             f_draw_layout_bbox, f_draw_span_bbox, f_dump_md, f_dump_middle_json,
             f_dump_model_output, f_dump_orig_pdf, f_dump_content_list, f_make_md_mode,
             client_side_output_generation=client_side_output_generation,
+        )
+    elif backend == "vlm-api":
+        from mineru.backend.vlm.vlm_api_processor import process_vlm_api
+        process_vlm_api(
+            output_dir, pdf_file_names, pdf_bytes_list,
+            f_draw_layout_bbox, f_draw_span_bbox, f_dump_md, f_dump_middle_json,
+            f_dump_model_output, f_dump_orig_pdf, f_dump_content_list, f_make_md_mode,
+            server_url, **kwargs
         )
     else:
         if backend.startswith("vlm-"):
