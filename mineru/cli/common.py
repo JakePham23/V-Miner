@@ -665,6 +665,62 @@ def do_parse(
     # 预处理PDF字节数据
     pdf_bytes_list = _prepare_pdf_bytes(pdf_bytes_list, start_page_id, end_page_id)
 
+    # Tự động nhận diện ngôn ngữ nếu truyền vào là 'auto'
+    from mineru.utils.language import detect_lang
+    import pypdfium2 as pdfium
+    new_lang_list = []
+    for idx, (lang, pdf_bytes) in enumerate(zip(p_lang_list, pdf_bytes_list)):
+        if lang == 'auto':
+            try:
+                pdf = pdfium.PdfDocument(pdf_bytes)
+                sample_text = ""
+                # 1. Thử đọc từ text layer trước (nhanh nhất)
+                for i in range(min(len(pdf), 5)):
+                    sample_text += pdf[i].get_textpage().get_text_bounded()
+                
+                # 2. Nếu không có text layer (là ảnh/scan), thực hiện OCR nhanh trang 1
+                if len(sample_text.strip()) < 10 and len(pdf) > 0:
+                    from mineru.utils.pdf_image_tools import load_images_from_pdf_core
+                    from mineru.utils.enum_class import ImageType
+                    images = load_images_from_pdf_core(pdf_bytes, image_type=ImageType.PIL, start_page_id=0, end_page_id=0)
+                    if images:
+                        import cv2
+                        import numpy as np
+                        from mineru.backend.pipeline.model_init import AtomModelSingleton, AtomicModel
+                        
+                        # Sử dụng OCR mặc định (ch_lite) để lấy mẫu ký tự
+                        atom_model_manager = AtomModelSingleton()
+                        ocr_engine = atom_model_manager.get_atom_model(atom_model_name=AtomicModel.OCR, lang="ch_lite")
+                        
+                        pil_img = images[0]['img_pil']
+                        cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+                        ocr_res = ocr_engine.ocr(cv_img, det=True, rec=True)[0]
+                        if ocr_res:
+                            sample_text = " ".join([line[1][0] for line in ocr_res])
+
+                pdf.close()
+                detected = detect_lang(sample_text)
+                
+                # Bổ sung kiểm tra ký tự đặc trưng Tiếng Việt để tránh nhầm lẫn với 'en'
+                vietnamese_markers = "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđĐ"
+                has_vi_markers = any(char in sample_text for char in vietnamese_markers)
+                
+                if has_vi_markers:
+                    if detected != 'vi':
+                        logger.info(f"Phát hiện ký tự Tiếng Việt, ghi đè ngôn ngữ từ '{detected}' sang 'vi'")
+                    detected = 'vi'
+                
+                if not detected:
+                    detected = 'ch'
+                logger.info(f"Auto-detected language for file {idx}: {detected}")
+                new_lang_list.append(detected)
+            except Exception as e:
+                logger.error(f"Auto-detection failed for file {idx}: {e}")
+                new_lang_list.append('ch')
+        else:
+            new_lang_list.append(lang)
+    p_lang_list = new_lang_list
+
     # --- Vietnamese auto-routing ---
     # Normalize vi-light-ocr alias to vi
     p_lang_list = ['vi' if lang == 'vi-light-ocr' else lang for lang in p_lang_list]

@@ -858,7 +858,7 @@ async def run_parse_job(
     )
 
     if request_options.backend == "pipeline":
-        await asyncio.to_thread(do_parse, **parse_kwargs)
+        await aio_do_parse(**parse_kwargs)
     else:
         await aio_do_parse(**parse_kwargs)
     return response_file_names

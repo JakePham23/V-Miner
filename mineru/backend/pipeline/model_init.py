@@ -44,13 +44,9 @@ def table_orientation_cls_model_init():
 
 
 def table_cls_model_init():
-    table_backend = os.getenv('MINERU_TABLE_BACKEND', 'paddle').lower()
-    if table_backend == 'lighton':
-        logger.info("Using LightOn backend for Table Classification")
     return PaddleTableClsModel()
 
 def wired_table_model_init(lang=None):
-    table_backend = os.getenv('MINERU_TABLE_BACKEND', 'paddle').lower()
     atom_model_manager = AtomModelSingleton()
     ocr_engine = atom_model_manager.get_atom_model(
         atom_model_name=AtomicModel.OCR,
@@ -59,10 +55,6 @@ def wired_table_model_init(lang=None):
         lang=lang,
         enable_merge_det_boxes=False
     )
-    if table_backend == 'lighton' and lang and lang.startswith('vi'):
-        logger.info("Using LightOn backend for Wired Table recognition (Vietnamese)")
-        # LightOnOCR logic is handled in batch_analyze.py, 
-        # but we initialize the default here as fallback
     table_model = UnetTableModel(ocr_engine)
     return table_model
 
@@ -97,11 +89,63 @@ def pp_doclayout_v2_model_init(weight, device='cpu'):
     model = PPDocLayoutV2LayoutModel(weight, device)
     return model
 
+def _check_api_available():
+    """Ping the configured API once and set _MINERU_API_AVAILABLE env var.
+    Safe to call multiple times - skips if already set.
+    """
+    if os.getenv('_MINERU_API_AVAILABLE') is not None:
+        return  # already checked
+    
+    is_api_requested = bool(os.getenv('OPENAI_API_BASE') or os.getenv('LLM_SERVICE'))
+    if not is_api_requested:
+        os.environ['_MINERU_API_AVAILABLE'] = '0'
+        return
+    
+    import urllib.parse
+    import requests
+    api_base = os.getenv('OPENAI_API_BASE', 'http://localhost:11434/v1')
+    parsed = urllib.parse.urlparse(api_base)
+    base_url = f"{parsed.scheme}://{parsed.netloc}/"
+    
+    for _ in range(2):
+        try:
+            requests.get(base_url, timeout=2.0)
+            os.environ['_MINERU_API_AVAILABLE'] = '1'
+            logger.info(f"API server at {base_url} is available — using API OCR backend.")
+            return
+        except Exception:
+            pass
+    
+    os.environ['_MINERU_API_AVAILABLE'] = '0'
+    logger.warning(f"API server at {base_url} is not responding after 2 attempts. Falling back to local OCR backend.")
+
+
 def ocr_model_init(det_db_box_thresh=0.5,
                    lang=None,
                    det_db_unclip_ratio=1.5,
                    enable_merge_det_boxes=True
                    ):
+    # API availability was already determined by _check_api_available() before this call
+    is_api_ready = os.getenv('_MINERU_API_AVAILABLE', '0') == '1'
+    # Backward compat: if OPENAI_MODEL contains 'lighton'
+    is_lighton_env = 'lighton' in os.getenv('OPENAI_MODEL', '').lower()
+    should_use_api = is_api_ready or is_lighton_env
+
+    if should_use_api:
+        # Luồng đúng:
+        # - text_backend='lighton' → text OCR gọi API
+        # - table_backend='' (không set) → Table-cells OCR dùng PaddleOCR mặc định
+        # - API chỉ được gọi lần cuối để refine table (trong batch_analyze.py)
+        from mineru.model.ocr.configurable_hybrid_ocr import ConfigurableHybridOCR
+        model_name = os.getenv('OPENAI_MODEL', 'API').split('/')[-1]
+        logger.info(f"API available ({model_name}): text OCR → API, table cells → PaddleOCR (standard)")
+        return ConfigurableHybridOCR(
+            text_backend='lighton',
+            table_backend='paddle',  # Table-cells OCR dùng PaddleOCR chuẩn
+            image_backend='paddle',
+            det_db_box_thresh=det_db_box_thresh,
+            det_db_unclip_ratio=det_db_unclip_ratio,
+        )
 
     if lang in [None, "ch"]:
         use_dilation = True
@@ -131,47 +175,15 @@ def ocr_model_init(det_db_box_thresh=0.5,
         return HybridVisionLightOCR()
     
     elif lang == 'vi-hybrid':
-        # Custom hybrid OCR via environment variables
-        import sys
-        primary_ocr = os.getenv('PRIMARY_OCR', 'easyocr').lower()
-        table_ocr = os.getenv('TABLE_OCR', 'lighton').lower()
-        
-        logger.info(f"Using Custom Hybrid OCR: PRIMARY_OCR={primary_ocr}, TABLE_OCR={table_ocr}")
-        
-        if primary_ocr == 'vision':
-            # Vision + LightOnOCR
-            if sys.platform != 'darwin':
-                logger.warning("Vision OCR requires macOS, falling back to EasyOCR")
-                primary_ocr = 'easyocr'
-            else:
-                from mineru.model.ocr.hybrid_vision_light_ocr import HybridVisionLightOCR
-                return HybridVisionLightOCR()
-        
-        # Default: EasyOCR + LightOnOCR
         from mineru.model.ocr.hybrid_light_ocr import HybridLightOCR
         return HybridLightOCR()
     
     elif lang == 'vi-custom':
-        # Configurable hybrid OCR with flexible backend selection for ALL content types.
-        # Defaults: easyocr for all - works offline, no server needed.
-        # Override via env variables:
-        #   MINERU_TEXT_BACKEND=paddle|easyocr|vision (macOS only)
-        #   MINERU_TABLE_BACKEND=paddle|easyocr|vision|lighton (lighton needs LM Studio)
-        #   MINERU_IMAGE_BACKEND=paddle|easyocr|vision|lighton (lighton needs LM Studio)
-        text_backend = os.getenv('MINERU_TEXT_BACKEND', 'easyocr').lower()
-        table_backend = os.getenv('MINERU_TABLE_BACKEND', 'rapidtable').lower()
-        image_backend = os.getenv('MINERU_IMAGE_BACKEND', 'paddle').lower()
-        
-        logger.info(
-            f"Using Configurable Hybrid OCR: "
-            f"text={text_backend}, table={table_backend}, image={image_backend}"
-        )
-        
         from mineru.model.ocr.configurable_hybrid_ocr import ConfigurableHybridOCR
         return ConfigurableHybridOCR(
-            text_backend=text_backend,
-            table_backend=table_backend,
-            image_backend=image_backend,
+            text_backend='easyocr',
+            table_backend='rapidtable',
+            image_backend='paddle',
             det_db_box_thresh=det_db_box_thresh,
             det_db_unclip_ratio=det_db_unclip_ratio,
         )
@@ -250,13 +262,19 @@ class AtomModelSingleton:
                 lang
             )
         elif atom_model_name in [AtomicModel.OCR]:
-            key = (
-                atom_model_name,
-                kwargs.get('det_db_box_thresh', 0.5),
-                lang,
-                kwargs.get('det_db_unclip_ratio', 1.5),
-                kwargs.get('enable_merge_det_boxes', True)
-            )
+            # When API backend is active, all OCR calls share the same backend
+            # regardless of det_db_box_thresh / unclip_ratio / lang differences.
+            # Use a single shared key to avoid creating 3 duplicate instances.
+            if os.getenv('_MINERU_API_AVAILABLE', '0') == '1':
+                key = (atom_model_name, '__api__')
+            else:
+                key = (
+                    atom_model_name,
+                    kwargs.get('det_db_box_thresh', 0.5),
+                    lang,
+                    kwargs.get('det_db_unclip_ratio', 1.5),
+                    kwargs.get('enable_merge_det_boxes', True)
+                )
         elif atom_model_name in [AtomicModel.Layout, AtomicModel.MFR]:
             key = (
                 atom_model_name,
@@ -349,6 +367,8 @@ class MineruPipelineModel:
             ),
             device=self.device,
         )
+        # Ping API once before OCR init so singleton key is stable
+        _check_api_available()
         # 初始化ocr
         self.ocr_model = atom_model_manager.get_atom_model(
             atom_model_name=AtomicModel.OCR,

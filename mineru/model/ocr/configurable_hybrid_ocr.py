@@ -167,6 +167,15 @@ class ConfigurableHybridOCR:
         EasyOCR and LightOnOCR do NOT support this — they do full-image OCR.
         """
         return hasattr(self.text_ocr, 'text_detector')
+
+    @property
+    def text_detector(self):
+        """
+        Expose text_detector so that caller can use .batch_predict()
+        """
+        if self.has_text_detector:
+            return self.text_ocr.text_detector
+        raise AttributeError("The active text backend does not have a text_detector.")
     
     def full_page_ocr(self, img: np.ndarray, mfd_res=None):
         """
@@ -231,6 +240,19 @@ class ConfigurableHybridOCR:
         is_table = 'table' in tqdm_desc.lower() if tqdm_desc else False
         is_image = any(keyword in tqdm_desc.lower() for keyword in ['image', 'figure', 'img']) if tqdm_desc else False
         
+        # Backends like LightOnOCR and EasyOCR don't support det-only (bounding box extraction without recognition).
+        # When det=True and rec=False (e.g., Table-ocr det), we MUST use a real detector like PaddleOCR.
+        if det and not rec:
+            if not hasattr(self, '_fallback_det_engine'):
+                from .pytorch_paddle import PytorchPaddleOCR
+                logger.info("Initializing PaddleOCR as fallback detector for det-only request")
+                det_kwargs = self.kwargs.copy()
+                # Default to 'ch' if language is 'auto' or not standard Paddle OCR supported language
+                if det_kwargs.get('lang') in ['auto', None, ''] or det_kwargs.get('lang', '').startswith('vi'):
+                    det_kwargs['lang'] = 'ch'
+                self._fallback_det_engine = PytorchPaddleOCR(**det_kwargs)
+            return self._fallback_det_engine.ocr(img, det, rec, mfd_res, tqdm_enable, tqdm_desc, **kwargs)
+
         # Route to appropriate backend
         if is_table or self.is_table_mode:
             # Use table backend

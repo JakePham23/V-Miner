@@ -1067,6 +1067,10 @@ async def run_orchestrated_cli(
             "east_slavic",
             "cyrillic",
             "devanagari",
+            "vi",
+            "vi-light-ocr",
+            "vi-custom",
+            "vietnamese"
         ]
     ),
     default="ch",

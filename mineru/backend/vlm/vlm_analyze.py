@@ -13,14 +13,13 @@ from loguru import logger
 from tqdm import tqdm
 
 from .utils import enable_custom_logits_processors, set_default_gpu_memory_utilization, set_default_batch_size, \
-    set_lmdeploy_backend, mod_kwargs_by_device_type
+    set_lmdeploy_backend
 from .model_output_to_middle_json import (
     append_page_blocks_to_middle_json,
     finalize_middle_json,
     init_middle_json,
 )
 from mineru.backend.utils.runtime_utils import exclude_progress_bar_idle_time
-    set_lmdeploy_backend, mod_kwargs_by_device_type
 from .model_output_to_middle_json import result_to_middle_json
 from ...data.data_reader_writer import DataWriter
 from mineru.utils.pdf_image_tools import (
@@ -170,7 +169,6 @@ class ModelSingleton:
                         except ImportError:
                             raise ImportError("Please install vllm to use the vllm-async-engine backend.")
 
-                        kwargs = mod_kwargs_by_device_type(kwargs, vllm_mode="async_engine")
 
                         if "compilation_config" in kwargs:
                             if isinstance(kwargs["compilation_config"], dict):
@@ -290,8 +288,7 @@ async def _get_model_async(
     server_url: str | None,
     **kwargs,
 ) -> MinerUClient:
-    return await asyncio.to_thread(
-        ModelSingleton().get_model,
+    return ModelSingleton().get_model(
         backend,
         model_path,
         server_url,

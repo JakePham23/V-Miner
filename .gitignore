@@ -58,6 +58,7 @@ _build/
 
 
 output/
+output_*/
 
 scratch/
 patch_ocr.py

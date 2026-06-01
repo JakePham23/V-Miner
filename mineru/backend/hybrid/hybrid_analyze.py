@@ -90,7 +90,9 @@ def ocr_det(
             res["bbox"] = normalized_bbox
 
     ocr_res_list = []
-    if not hybrid_pipeline_model.enable_ocr_det_batch:
+    
+    has_text_det = getattr(hybrid_pipeline_model.ocr_model, 'has_text_detector', hasattr(hybrid_pipeline_model.ocr_model, 'text_detector'))
+    if not hybrid_pipeline_model.enable_ocr_det_batch or not has_text_det:
         # 非批处理模式 - 逐页处理
         for np_image, page_mfd_res, page_results in tqdm(
             zip(np_images, mfd_res, model_list),

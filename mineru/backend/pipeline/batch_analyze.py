@@ -60,18 +60,18 @@ def _fix_layout_res(layout_res: list) -> list:
     # ── Fix 2: dedup bbox ────────────────────────────────────────────────────
     seen: dict = {}  # key = rounded bbox tuple → block có score cao nhất
     for block in layout_res:
-        poly = block.get("poly", [])
-        if len(poly) < 6:
+        bbox = block.get("bbox", [])
+        if len(bbox) < 4:
             continue
         # Round về 10px để bắt các bbox gần giống nhau (sub-pixel diff)
-        key = tuple(round(x / 10) for x in [poly[0], poly[1], poly[4], poly[5]])
+        key = tuple(round(x / 10) for x in [bbox[0], bbox[1], bbox[2], bbox[3]])
         score = block.get("score", 0)
         if key not in seen or score > seen[key].get("score", 0):
             seen[key] = block
 
     deduped = list(seen.values())
     # Giữ thứ tự gốc (sort theo y rồi x)
-    deduped.sort(key=lambda b: (b.get("poly", [0, 0])[1], b.get("poly", [0])[0]))
+    deduped.sort(key=lambda b: (b.get("bbox", [0, 0])[1], b.get("bbox", [0])[0]))
 
     # ── Fix 1: promote plain_text → title ───────────────────────────────────
     # Pattern heading tiếng Việt:
@@ -87,10 +87,10 @@ def _fix_layout_res(layout_res: list) -> list:
     result = []
     for block in deduped:
         cat_id = block.get("category_id")
-        if cat_id == 1:  # plain_text
-            poly = block.get("poly", [])
-            if len(poly) >= 6:
-                height = abs(poly[5] - poly[1])
+        if cat_id == 1 or block.get("label") == "plain_text":  # plain_text
+            bbox = block.get("bbox", [])
+            if len(bbox) >= 4:
+                height = abs(bbox[3] - bbox[1])
                 # Chỉ xét block cao ≤ 80px (1–2 dòng heading)
                 if height <= 80:
                     # Lấy text đã OCR nếu có (từ bước trước), hoặc để pipeline tự OCR
@@ -99,11 +99,12 @@ def _fix_layout_res(layout_res: list) -> list:
                         from loguru import logger as _logger
                         _logger.debug(
                             f"[layout_fix] Promote plain_text→title: "
-                            f"bbox=[{poly[0]:.0f},{poly[1]:.0f}→{poly[4]:.0f},{poly[5]:.0f}] "
+                            f"bbox=[{bbox[0]:.0f},{bbox[1]:.0f}→{bbox[2]:.0f},{bbox[3]:.0f}] "
                             f"text={repr(existing_text[:60])}"
                         )
                         block = dict(block)
                         block["category_id"] = 0  # title
+                        block["label"] = "title"
         result.append(block)
 
     return result
@@ -438,7 +439,8 @@ class BatchAnalyze:
         clean_vram(self.model.device, vram_threshold=8)
 
         # Adapt PP-DocLayoutV2 format to YOLO format
-        use_pp = os.getenv('USE_PP_LAYOUT', '0')
+        # ppDoclayout luôn dùng PP format — không cần env var
+        use_pp = '1'
         if use_pp == '1':
             PP_TO_YOLO_MAP = {
                 0: 1, 1: 1, 2: 2, 3: 3, 4: 1, 5: 8, 6: 0, 7: 4, 8: 2, 9: 2, 10: 1,
@@ -563,11 +565,9 @@ class BatchAnalyze:
 
             for table_res in table_res_list:
                 def get_crop_table_img(scale):
-                    bbox = normalize_to_int_bbox(
-                        [float(v) / float(scale) for v in table_res["bbox"]]
-                    )
-                    if bbox is None:
-                        return np_img[0:0, 0:0]
+                    crop_xmin, crop_ymin = int(table_res['poly'][0]), int(table_res['poly'][1])
+                    crop_xmax, crop_ymax = int(table_res['poly'][4]), int(table_res['poly'][5])
+                    bbox = (int(crop_xmin / scale), int(crop_ymin / scale), int(crop_xmax / scale), int(crop_ymax / scale))
                     return get_crop_np_img(bbox, np_img, scale=scale)
 
                 wireless_table_img = get_crop_table_img(scale = 1)
@@ -586,82 +586,15 @@ class BatchAnalyze:
                                                 'ocr_enable': ocr_enable,
                                               })
 
-        # 表格识别 table recognition
+        # 表格识别 table recognition - thuật toán chuẩn MinerU
         if self.table_enable:
-            
-            # Check if any tables use LightOnOCR (vi-light-ocr, vi-vision-light, vi-hybrid, or vi-custom with lighton backend)
-            lighton_langs = ['vi-light-ocr', 'vi-vision-light', 'vi-hybrid']
-            
-            # Check for vi-custom with lighton backend
-            is_lighton_backend = os.getenv('MINERU_TABLE_BACKEND', 'paddle').lower() == 'lighton'
-            
-            lighton_tables = [
-                t for t in table_res_list_all_page 
-                if (t.get('lang') in lighton_langs or 
-                (t.get('lang') and t.get('lang').startswith('vi') and is_lighton_backend))
-                and t.get('ocr_enable', False)
-            ]
-            
-            other_tables = [
-                t for t in table_res_list_all_page 
-                if not (t.get('lang') in lighton_langs or 
-                (t.get('lang') and t.get('lang').startswith('vi') and is_lighton_backend))
-                or not t.get('ocr_enable', False)
-            ]
+            # Tất cả bảng đều đi qua thuật toán chuẩn (không phân loại)
+            standard_table_list = table_res_list_all_page
 
-            # 图片旋转批量处理
-            table_orientation_cls_model = atom_model_manager.get_atom_model(
-                atom_model_name=AtomicModel.TableOrientationCls,
-            )
-            try:
-                if self.table_ori_cls_batch_enabled:
-                    rotate_labels = table_orientation_cls_model.batch_predict(
-                        table_res_list_all_page,
-                        det_batch_size=self.batch_ratio * OCR_DET_BASE_BATCH_SIZE,
-                    )
-                    if len(rotate_labels) != len(table_res_list_all_page):
-                        raise ValueError(
-                            "Table orientation batch prediction result count mismatch"
-                        )
-                    for table_res, rotate_label in zip(table_res_list_all_page, rotate_labels):
-                        self._apply_table_rotate_label(table_res, rotate_label)
-                else:
-                    for table_res in table_res_list_all_page:
-                        rotate_label = table_orientation_cls_model.predict(table_res['table_img'])
-                        self._apply_table_rotate_label(table_res, rotate_label)
-            except Exception as e:
-                logger.warning(
-                    f"Table orientation classification failed: {e}, using original image"
-                )
-
-
-            
-            use_wired_skeleton = os.environ.get("USE_WIRED_TABLE_SKELETON", "0") == "1"
-            
-            # Process LightOnOCR tables directly IF NOT using skeleton mode
-            if lighton_tables and not use_wired_skeleton:
-                from mineru.model.ocr.lighton_ocr import LightOnOCR
-                # Config đọc từ env vars (LLM_SERVICE / OPENAI_API_BASE / OPENAI_MODEL ...)
-                lighton_ocr = LightOnOCR()
-                for table_res_dict in tqdm(lighton_tables, desc="LightOnOCR Table"):
-                    bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
-                    _tbl_lang = table_res_dict.get('lang', '')
-                    # Truyền lang để tự phát hiện bảng tiếng Việt và dùng VI prompt
-                    html_result = lighton_ocr.recognize_table(bgr_image, lang=_tbl_lang)
-                    table_res_dict["table_res"]["html"] = html_result
-                    # Mark as processed to skip regular table processing
-                    table_res_dict["lighton_processed"] = True
-            
-            # Process remaining tables with standard pipeline
-            standard_table_list = [t for t in table_res_list_all_page if not t.get("lighton_processed", False)]
-            
-            # Skip standard processing if no tables left
-            if not standard_table_list:
-                pass  # All tables were processed by LightOnOCR
-            else:
+            if standard_table_list:
                 # 图片旋转批量处理
                 img_orientation_cls_model = atom_model_manager.get_atom_model(
-                    atom_model_name=AtomicModel.ImgOrientationCls,
+                    atom_model_name=AtomicModel.TableOrientationCls,
                 )
                 try:
                     if self.enable_ocr_det_batch:
@@ -689,7 +622,7 @@ class BatchAnalyze:
                     f"Table classification failed: {e}, using default model"
                 )
 
-            # OCR det 过程，顺序执行
+            # Table-ocr det: PaddleOCR phát hiện vùng chữ trong bảng
             rec_img_lang_group = defaultdict(list)
             det_ocr_engine = atom_model_manager.get_atom_model(
                 atom_model_name=AtomicModel.OCR,
@@ -725,9 +658,8 @@ class BatchAnalyze:
                     ocr_result = update_det_boxes(ocr_result, formula_mask_boxes)
                 if ocr_result:
                     ocr_result = sorted_boxes(ocr_result)
-                # 构造需要 OCR 识别的图片字典，包括cropped_img, dt_box, table_id，并按照语言进行分组
                 for dt_box in ocr_result:
-                    rec_img_lang_group[_lang].append(
+                    rec_img_lang_group[table_res_dict['lang']].append(
                         {
                             "cropped_img": get_rotate_crop_image_for_text_rec(
                                 bgr_image, np.asarray(dt_box, dtype=np.float32)
@@ -737,56 +669,39 @@ class BatchAnalyze:
                         }
                     )
 
-            # OCR rec，按照语言分批处理
+            # Table-cells OCR: PaddleOCR đọc text từng cell (KHÔNG dùng API)
             for _lang, rec_img_list in rec_img_lang_group.items():
                 if not rec_img_list:
                     continue
-                # Tạm gỡ MINERU_TEXT_BACKEND để ép lấy mô hình PaddleOCR (tránh bị LightOnOCR chen ngang)
-                old_backend = os.environ.get("MINERU_TEXT_BACKEND")
-                if old_backend:
-                    del os.environ["MINERU_TEXT_BACKEND"]
+                # Luôn dùng PaddleOCR cho cell - tạm ẩn _MINERU_API_AVAILABLE
+                _api_flag = os.environ.pop('_MINERU_API_AVAILABLE', None)
                 ocr_engine = atom_model_manager.get_atom_model(
                     atom_model_name=AtomicModel.OCR,
                     det_db_box_thresh=0.5,
                     det_db_unclip_ratio=1.6,
-                    lang="vi-paddle-ocr" if "vi" in _lang else _lang,
+                    lang="ch" if "vi" in _lang else _lang,
                     enable_merge_det_boxes=False,
                 )
-                
-                if old_backend:
-                    os.environ["MINERU_TEXT_BACKEND"] = old_backend
-                
+                if _api_flag is not None:
+                    os.environ['_MINERU_API_AVAILABLE'] = _api_flag
+
                 cropped_img_list = [item["cropped_img"] for item in rec_img_list]
                 ocr_res_list = ocr_engine.ocr(cropped_img_list, det=False, tqdm_enable=True, tqdm_desc=f"Table-cells OCR ({_lang})")[0]
-                # 按照 table_id 将识别结果进行回填
                 for img_dict, ocr_res in zip(rec_img_list, ocr_res_list):
                     ocr_text = self._normalize_table_ocr_rec_text(ocr_res[0])
                     ocr_result_item = [img_dict["dt_box"], html.escape(ocr_text), ocr_res[1]]
-                    if table_res_list_all_page[img_dict["table_id"]].get("ocr_result"):
-                        table_res_list_all_page[img_dict["table_id"]]["ocr_result"].append(
-                            ocr_result_item
-                        )
-                    else:
-                        table_res_list_all_page[img_dict["table_id"]]["ocr_result"] = [
-                            ocr_result_item
                     if standard_table_list[img_dict["table_id"]].get("ocr_result"):
-                        standard_table_list[img_dict["table_id"]]["ocr_result"].append(
-                            [img_dict["dt_box"], html.escape(ocr_res[0]), ocr_res[1]]
-                        )
+                        standard_table_list[img_dict["table_id"]]["ocr_result"].append(ocr_result_item)
                     else:
-                        standard_table_list[img_dict["table_id"]]["ocr_result"] = [
-                            [img_dict["dt_box"], html.escape(ocr_res[0]), ocr_res[1]]
-                        ]
+                        standard_table_list[img_dict["table_id"]]["ocr_result"] = [ocr_result_item]
 
-            # 先对所有表格使用无线表格模型，然后对分类为有线的表格使用有线表格模型
+            # Inline objects (formula, etc.)
             for table_res_dict in table_res_list_all_page:
                 if not self._table_supports_inline_objects(table_res_dict):
                     continue
-
                 table_inline_objects = table_res_dict.get("table_inline_objects", [])
                 if not table_inline_objects:
                     continue
-
                 table_ocr_result = table_res_dict.setdefault("ocr_result", [])
                 for inline_object in table_inline_objects:
                     table_ocr_result.append(
@@ -796,18 +711,17 @@ class BatchAnalyze:
                             inline_object["score"],
                         ]
                     )
-
                 self._sort_table_ocr_result(table_ocr_result)
 
+            # WirelessTable dựng HTML skeleton
             wireless_table_model = atom_model_manager.get_atom_model(
                 atom_model_name=AtomicModel.WirelessTable,
             )
             wireless_table_model.batch_predict(standard_table_list)
 
-            # 单独拿出有线表格进行预测
+            # WiredTable cho bảng kẻ
             wired_table_res_list = []
             for table_res_dict in standard_table_list:
-                # logger.debug(f"Table classification result: {table_res_dict["table_res"]["cls_label"]} with confidence {table_res_dict["table_res"]["cls_score"]}")
                 if (
                     (table_res_dict["table_res"]["cls_label"] == AtomicModel.WirelessTable and table_res_dict["table_res"]["cls_score"] < 0.9)
                     or table_res_dict["table_res"]["cls_label"] == AtomicModel.WiredTable
@@ -821,7 +735,6 @@ class BatchAnalyze:
                 ):
                     if not table_res_dict.get("ocr_result", None):
                         continue
-
                     wired_table_model = atom_model_manager.get_atom_model(
                         atom_model_name=AtomicModel.WiredTable,
                         lang=table_res_dict["lang"],
@@ -832,27 +745,25 @@ class BatchAnalyze:
                         table_res_dict["table_res"].get("html", None)
                     )
 
-            # 表格格式清理
+            # Chuẩn hoá HTML
             for table_res_dict in table_res_list_all_page:
                 html_code = table_res_dict["table_res"].get("html", "") or ""
-
-                # 检查html_code是否包含'<table>'和'</table>'
                 if "<table>" in html_code and "</table>" in html_code:
-                    # 选用<table>到</table>的内容，放入table_res_dict['table_res']['html']
                     start_index = html_code.find("<table>")
                     end_index = html_code.rfind("</table>") + len("</table>")
                     table_res_dict["table_res"]["html"] = html_code[start_index:end_index]
-                    
-            if use_wired_skeleton and lighton_tables:
+
+            # Bước cuối: gửi ảnh bảng GỐC + skeleton HTML lên LightOnOCR (API hoặc Local VLM fallback) để refine
+            if os.environ.get("MINERU_TEXT_BACKEND") == "lighton" or "lighton" in os.environ.get("OPENAI_MODEL", "").lower():
                 from mineru.model.ocr.lighton_ocr import LightOnOCR
                 lighton_ocr = LightOnOCR()
-                
                 model_name = os.environ.get("OPENAI_MODEL", "LLM OCR").split("/")[-1]
-                for table_res_dict in tqdm(lighton_tables, desc=f"{model_name} (with Skeleton)"):
+                for table_res_dict in tqdm(standard_table_list, desc=f"{model_name} Table Refine"):
+                    if not table_res_dict.get('ocr_enable', False):
+                        continue
                     bgr_image = cv2.cvtColor(table_res_dict["table_img"], cv2.COLOR_RGB2BGR)
                     _tbl_lang = table_res_dict.get('lang', '')
                     skeleton_html = table_res_dict["table_res"].get("html", "")
-                    
                     html_result = lighton_ocr.recognize_table(bgr_image, lang=_tbl_lang, skeleton_html=skeleton_html)
                     table_res_dict["table_res"]["html"] = html_result
 
@@ -886,6 +797,7 @@ class BatchAnalyze:
                         det_image,
                         useful_list,
                         ocr_res_list_dict,
+                        res,
                         adjusted_mfdetrec_res,
                         _lang,
                     ))
@@ -893,7 +805,7 @@ class BatchAnalyze:
             # 按语言分组
             lang_groups = defaultdict(list)
             for crop_info in all_cropped_images_info:
-                lang = crop_info[5]
+                lang = crop_info[6]
                 lang_groups[lang].append(crop_info)
 
             # 对每种语言按分辨率分组并批处理
@@ -945,27 +857,17 @@ class BatchAnalyze:
                         # --- Fast Paddle batch path ---
                         batch_images = []
                         for crop_info in group_crops:
-                            img = crop_info[0]
+                            img = crop_info[1] # Use det_image
                             h, w = img.shape[:2]
                             padded_img = np.ones((target_h, target_w, 3), dtype=np.uint8) * 255
                             padded_img[:h, :w] = img
                             batch_images.append(padded_img)
 
-                    # 处理批处理结果
-                    for crop_info, (dt_boxes, _) in zip(group_crops, batch_results):
-                        (
-                            bgr_image,
-                            _det_image,
-                            useful_list,
-                            ocr_res_list_dict,
-                            adjusted_mfdetrec_res,
-                            _lang,
-                        ) = crop_info
                         det_batch_size = min(len(batch_images), self.batch_ratio * OCR_DET_BASE_BATCH_SIZE)
                         batch_results = ocr_model.text_detector.batch_predict(batch_images, det_batch_size)
 
                         for crop_info, (dt_boxes, _) in zip(group_crops, batch_results):
-                            bgr_image, useful_list, ocr_res_list_dict, res, adjusted_mfdetrec_res, _lang = crop_info
+                            bgr_image, _det_image, useful_list, ocr_res_list_dict, res, adjusted_mfdetrec_res, _lang = crop_info
 
                             if dt_boxes is not None and len(dt_boxes) > 0:
                                 dt_boxes_sorted = sorted_boxes(dt_boxes)
@@ -986,7 +888,7 @@ class BatchAnalyze:
                         # These backends detect + recognize in ONE step.
                         # We inject the text directly as final spans (no re-recognition needed).
                         for crop_info in group_crops:
-                            bgr_image, useful_list, ocr_res_list_dict, res, adjusted_mfdetrec_res, _lang = crop_info
+                            bgr_image, _det_image, useful_list, ocr_res_list_dict, res, adjusted_mfdetrec_res, _lang = crop_info
                             cat_id = res.get('category_id', '?')
                             h_img, w_img = bgr_image.shape[:2]
 
@@ -1028,16 +930,7 @@ class BatchAnalyze:
                                 else:
                                     logger.warning(f"[OCR-DET] cat={cat_id} img={w_img}x{h_img} → all items empty text (filtered)")
 
-                            if dt_boxes_final:
-                                ocr_res = [box.tolist() if hasattr(box, 'tolist') else box for box in dt_boxes_final]
-                                ocr_result_list = get_ocr_result_list(
-                                    ocr_res,
-                                    useful_list,
-                                    ocr_res_list_dict['ocr_enable'],
-                                    bgr_image,
-                                    _lang,
-                                )
-                                ocr_res_list_dict['layout_res'].extend(ocr_result_list)
+
 
             # 清理显存
             clean_vram(self.model.device, vram_threshold=8)

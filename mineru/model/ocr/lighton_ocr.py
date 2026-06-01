@@ -659,6 +659,7 @@ class LightOnOCRAPI:
         prompt = (
             "Bạn là một trợ lý OCR chuyên nghiệp. Hãy đọc toàn bộ văn bản, cấu trúc bảng biểu, "
             "danh sách và hình ảnh trong bức ảnh trang tài liệu này, sau đó chuyển đổi thành định dạng Markdown chính xác nhất. "
+            "Nhận diện rõ title và heading: in đậm đứng đầu dòng là heading, còn trong table, trong đoạn văn thì là in đậm <br>. "
             "Hãy giữ nguyên tiếng Việt có dấu và cấu trúc trang. "
             "LƯU Ý: Chỉ trả về nội dung Markdown kết quả, KHÔNG thêm bất kỳ câu chào hỏi, giải thích hay bọc trong thẻ code block markdown (như ```markdown) nào."
         )
@@ -924,9 +925,15 @@ class LightOnOCR:
         imgs = [img] if isinstance(img, np.ndarray) else img
         is_table = "table" in (tqdm_desc or "").lower()
 
+        if tqdm_enable:
+            from tqdm import tqdm
+            iterator = tqdm(imgs, desc=tqdm_desc)
+        else:
+            iterator = imgs
+
         if is_table:
             results = []
-            for image in imgs:
+            for image in iterator:
                 viet = vietnamese
                 if viet is None:
                     viet = self._should_use_vietnamese_prompt(image, auto_detect=True)
@@ -938,7 +945,7 @@ class LightOnOCR:
 
         ocr_res = []
         if det and rec:
-            for image in imgs:
+            for image in iterator:
                 text, score = self.recognize_text(image, page_img=page_img, poly=poly)
                 if text:
                     h, w = (
@@ -952,7 +959,7 @@ class LightOnOCR:
                     ocr_res.append(None)
         elif not det and rec:
             ocr_res.append(
-                [self.recognize_text(image, page_img=page_img, poly=poly) for image in imgs]
+                [self.recognize_text(image, page_img=page_img, poly=poly) for image in iterator]
             )
 
         return ocr_res
