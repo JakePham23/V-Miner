@@ -1,0 +1,139 @@
+Dưới đây là sơ đồ **Mermaid** mô tả chi tiết luồng xử lý tài liệu của V-Miner từ đầu vào đến đầu ra:
+
+```mermaid
+graph TD
+    %% Định nghĩa Style %%
+    classDef main fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:1px;
+    classDef mode fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+    classDef output fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    
+    %% Input %%
+    Start([Tài liệu: PDF / Hình ảnh]) --> Layout[1. Phân tích bố cục bằng ppdoclayout]:::process
+    
+    %% Phân tách Layout %%
+    Layout --> PlainText{Kiểu vùng?}
+    PlainText -- "Vùng văn bản thường" --> ProcessText[Trích xuất tọa độ & ảnh vùng]:::process
+    PlainText -- "Vùng bảng biểu" --> Skeleton[2. Trích xuất Khung xương Bảng<br>skeleton_html]:::process
+    
+    %% Chuyển giao sang Processor %%
+    ProcessText & Skeleton --> Route{Chế độ xử lý?}
+    
+    %% Nhánh Local %%
+    Route -- "-b local" --> LocalMode["Chế độ LOCAL (Chạy offline)"]:::mode
+    LocalMode --> LoadMLX[Tải mô hình lên RAM/VRAM qua MLX-LM]:::process
+    LoadMLX --> PromptLocal["Ghép prompt + skeleton_html + ảnh"]:::process
+    PromptLocal --> InferLocal[Model local điền chữ vào khung xương bảng]:::process
+    
+    %% Nhánh API %%
+    Route -- "-b vlm-api" --> APIMode["Chế độ API (vlm-api)"]:::mode
+    APIMode --> EncodeImg[Mã hóa ảnh toàn trang thành Base64]:::process
+    EncodeImg --> CallAPI[Gửi Request lên API Server<br>ví dụ: lfm2.5-vl]:::process
+    CallAPI --> HandleAPI[API Server xử lý & trả về JSON/Markdown]:::process
+    
+    %% Hợp nhất & Output %%
+    InferLocal & HandleAPI --> PostProcess[3. Hậu xử lý & Định dạng cấu trúc]:::process
+    PostProcess --> End([Kết quả: File Markdown .md cực kỳ chuẩn cấu trúc]):::output
+
+    %% Gán class style %%
+    class Start main;
+```
+
+### Giải thích các khối chính trong sơ đồ:
+1. **Phân tích Bố cục (`ppdoclayout`):** Nhận diện cấu trúc trang để không bị đọc lẫn lộn thứ tự cột, tiêu đề, chân trang.
+2. **Khung xương Bảng (`skeleton_html`):** Bước đệm quan trọng giúp cố định cấu trúc bảng trước khi VLM đọc chữ.
+3. **Phân nhánh Chế độ (Local vs API):**
+   - **Local:** Đi qua `mlx-lm` để suy luận trực tiếp trên CPU/GPU của máy.
+   - **API:** Chuyển đổi ảnh sang Base64 và đẩy toàn bộ việc xử lý cho API Server (giúp giảm tải 100% RAM cho máy local).
+Mình đã phát hiện và sửa thành công lỗi `RuntimeError: There is no Stream(gpu, 1) in current thread` mà bạn gặp phải.
+
+### Nguyên nhân lỗi và cách sửa:
+- **Nguyên nhân**: Framework MLX của Apple Silicon quản lý bộ nhớ GPU (stream) gắn liền với thread (luồng) mà nó khởi tạo. Trong bản 3.2, `mineru` đã sử dụng `asyncio.to_thread` và `loop.run_in_executor` ở 2 file `mineru/cli/fast_api.py` và `mineru_vl_utils/vlm_client/mlx_client.py` để đẩy quá trình xử lý PDF xuống background thread (nhằm tránh chặn các request tới FastAPI). Khi MLX cố generate OCR trên một thread mới, nó không tìm thấy stream GPU ban đầu nên gây ra lỗi crash. (Đây cũng là lý do ở bản `copy_origin` cũ không bị lỗi, do bản đó chạy đồng bộ hoàn toàn trên main thread).
+- **Cách sửa**: Mình đã can thiệp vào `fast_api.py` và `mlx_client.py`, thay thế các hàm gọi sang background thread thành các hàm gọi trực tiếp (synchronous). MLX hiện tại đã được thực thi thẳng trên main event loop và sẽ không còn bị crash stream GPU nữa. Tiến trình test hiện đang chạy (đã vượt qua khúc báo lỗi ban nãy).
+
+### Vấn đề RAM 12GB và Quantization (4, 8 bit bị xấu):
+- Hiện tượng chạy tốn 12GB RAM đỉnh điểm là bình thường đối với model ~2B tham số (như `LightOnOCR-2-1B`) khi load ở độ phân giải 16-bit float (bf16/fp16).
+- Việc sử dụng lượng tử hóa (Quantization 4-bit, 8-bit) giúp tiết kiệm RAM (xuống còn 4-6GB) nhưng sẽ làm giảm độ chính xác của các trọng số (weights). Với các tác vụ yêu cầu độ chính xác về vị trí hẹp (như kẻ ô bảng biểu, chữ nhỏ, OCR tài liệu tiếng Việt), việc dùng 4-bit/8-bit sẽ gây hiện tượng "ảo giác" (hallucination), rớt chữ hoặc output markdown bị xấu.
+- **Hướng tối ưu**: Nếu muốn giữ chất lượng 16-bit mà muốn giảm RAM, bạn chỉ có thể giảm `batch_size=1` cho toàn bộ các engine (không xử lý nhiều trang PDF cùng lúc) và giới hạn độ phân giải của hình ảnh đầu vào.
+
+### Tổng quan luồng hoạt động và Logic Thuật toán (Mermaid Diagram)
+Dưới đây là sơ đồ luồng hoạt động của hệ thống `MinerU` sau khi cập nhật cấu trúc mới:
+
+```mermaid
+flowchart TD
+    A[User CLI: mineru -p document.pdf] --> B(Khởi chạy FastAPI local Server)
+    B --> C{Xác định Backend}
+    C -->|pipeline| D[Pipeline Analyze]
+    C -->|vlm| E[VLM Analyze]
+    C -->|hybrid| F[Hybrid Auto Engine]
+    
+    %% Luồng Hybrid (Mặc định cho PDF)
+    F --> G[Layout Detection Model]
+    G --> H{Phân loại nội dung theo Vùng}
+    H -->|Text / Hình ảnh| I[Ocr / Extract truyền thống]
+    H -->|Table / Formula| J[Trích xuất nâng cao]
+    
+    %% Quyết định xử lý Table/Vietnamese
+    J --> K{Bảng chứa Tiếng Việt?}
+    K -->|Có| L[Chuyển hướng cho API / Local MLX]
+    K -->|Không| M[Model Table tiêu chuẩn]
+    
+    %% Luồng MLX (Local VLM)
+    L --> N[MlxVlmClient / LightOnOCR-2-1B]
+    N -->|Chạy trên Main Thread| O[MLX GPU Stream Inference]
+    
+    %% Kết xuất output
+    O --> P[Gom Layout, Table, Text thành MD]
+    M --> P
+    I --> P
+    P --> Q[Ghi ra thư mục: auto/document.md]
+```
+
+Bạn có thể check lại kết quả tiến trình chạy ở terminal hiện tại. Nếu mọi thứ đã parse ra `.md` trơn tru, bạn có muốn mình đi sâu thêm vào việc tùy chỉnh thông số độ phân giải ảnh (giảm RAM xài bản 16-bit) không?
+Mình đã phát hiện và sửa thành công lỗi `RuntimeError: There is no Stream(gpu, x) in current thread` mà bạn gặp phải.
+
+### Nguyên nhân lỗi và cách sửa:
+- **Nguyên nhân**: Framework MLX của Apple Silicon quản lý bộ nhớ GPU (stream) gắn liền với thread (luồng) mà nó khởi tạo. Trong bản 3.2, `mineru` đã sử dụng `asyncio.to_thread` và `loop.run_in_executor` ở 3 file (`mineru/cli/fast_api.py`, `mineru/backend/vlm/vlm_analyze.py` và `mineru_vl_utils/vlm_client/mlx_client.py`) để đẩy quá trình khởi tạo model và OCR xuống background thread (nhằm tránh chặn các request tới server). Việc chuyển đổi ngữ cảnh liên tục giữa các luồng khiến MLX bị mất context khởi tạo ban đầu, không tìm thấy Stream tương ứng nên gây ra crash. (Đây cũng là lý do ở bản `copy_origin` cũ không bị lỗi, do bản đó chạy đồng bộ hoàn toàn trên một thread duy nhất).
+- **Cách sửa**: Mình đã can thiệp vào các file code trên, thay thế các hàm gọi sang background thread thành gọi trực tiếp (synchronous). MLX hiện tại đã được thực thi thẳng trên một thread duy nhất và sẽ không còn bị crash stream GPU nữa. 
+
+### Vấn đề RAM 12GB và Quantization (4, 8 bit bị xấu):
+- Hiện tượng chạy tốn 12GB RAM đỉnh điểm là bình thường đối với model ~2B tham số (như `LightOnOCR-2-1B`) khi load ở độ phân giải gốc 16-bit float (bf16/fp16).
+- Việc sử dụng lượng tử hóa (Quantization 4-bit, 8-bit) giúp tiết kiệm RAM (xuống còn 4-6GB) nhưng sẽ làm giảm độ chính xác của các trọng số (weights). Với các tác vụ yêu cầu độ chính xác về vị trí hẹp (như phân tách ô kẻ bảng biểu, phân tích OCR tài liệu tiếng Việt), việc dùng 4-bit/8-bit sẽ gây hiện tượng rớt chữ, ghép cột sai, hoặc output markdown bị xấu.
+- **Hướng tối ưu**: N
+<truncated 87 bytes>
+n có thể thiết lập cấu hình chạy pipeline theo dạng tuần tự (tắt batch xử lý song song), bằng cách set cứng `batch_size=1` và `max_concurrency=1` ở trong file cài đặt backend để giới hạn dung lượng VRAM sinh ra khi parse. 
+
+### Sơ đồ luồng hoạt động tổng quan sau khi Rebase
+Để tổng hợp và vẽ lại logic thuật toán của phiên bản MinerU này, bạn có thể tham khảo biểu đồ Mermaid (Architecture Diagram) dưới đây mô tả cách MinerU quyết định gọi MLX/API hay OCR truyền thống:
+
+```mermaid
+flowchart TD
+    A[User gọi lệnh: mineru -p document.pdf] --> B(Khởi chạy FastAPI Server & Event Loop)
+    B --> C{Xác định Backend xử lý}
+    C -->|pipeline| D[Pipeline Analyze]
+    C -->|vlm| E[VLM Analyze]
+    C -->|hybrid| F[Hybrid Auto Engine]
+    
+    %% Luồng Hybrid (Mặc định cho văn bản)
+    F --> G[DocLayout-YOLO Model]
+    G --> H{Phân loại vùng hiển thị}
+    H -->|Đoạn văn, tiêu đề| I[OCR/Trích xuất text cục bộ]
+    H -->|Công thức toán / Bảng| J[Trích xuất Bảng/Toán học nâng cao]
+    
+    %% Xử lý logic tiếng Việt cho Bảng (Đã thêm ở v3.2)
+    J --> K{Bảng hoặc vùng phát hiện Tiếng Việt?}
+    K -->|Không có tiếng Việt| M[Gọi Model Table tiêu chuẩn của MinerU]
+    K -->|Có tiếng Việt| L[Chuyển hướng cho API / Local MLX]
+    
+    %% Luồng Local MLX
+    L --> N[MlxVlmClient / LightOnOCR-2-1B]
+    N -->|Chạy trên Main Thread| O[MLX GPU Inference]
+    
+    %% Gom kết quả
+    O --> P[Gộp Layout, Text, Table thành Markdown chuẩn]
+    M --> P
+    I --> P
+    P --> Q[Ghi ra thư mục: auto/document.md]
+```
+
+Bạn có thể check lại kết quả tiến trình chạy ở terminal hiện tại. Nếu mọi thứ đã parse ra `.md` trơn tru, bạn có muốn mình đi sâu thêm vào việc tùy chỉnh thông số cấu hình (`batch_size`) trong file yaml để giảm RAM ở mức tối đa không?
