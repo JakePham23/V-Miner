@@ -466,7 +466,7 @@ class LightOnOCRAPI:
         self.timeout    = timeout
         self.drop_score = kwargs.get("drop_score", 0.5)
         self._headers   = build_api_headers(self._cfg)
-        logger.info(f"[LightOnOCRAPI] URL={self.server_url!r} model={self.model_name!r} service={self._cfg.llm_service!r}")
+        logger.info(f"[OCR API] URL={self.server_url!r} model={self.model_name!r} service={self._cfg.llm_service!r}")
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
@@ -509,12 +509,12 @@ class LightOnOCRAPI:
                     res  = r.json()
                     text = res.get("response", res.get("message", {}).get("content", ""))
                     if not text:
-                        logger.warning(f"[LightOnOCRAPI] Ollama: response 200 nhưng content rỗng. raw={res}")
+                        logger.warning(f"[OCR API] Ollama: response 200 nhưng content rỗng. raw={res}")
                     return text
                 else:
-                    logger.error(f"[LightOnOCRAPI] Ollama: HTTP {r.status_code} - {r.text[:200]}")
+                    logger.error(f"[OCR API] Ollama: HTTP {r.status_code} - {r.text[:200]}")
             except Exception as e:
-                logger.error(f"[LightOnOCRAPI] Ollama error: {e}")
+                logger.error(f"[OCR API] Ollama error: {e}")
                 raise
         else:
             # OpenAI / LM Studio / Azure / ... style
@@ -537,17 +537,17 @@ class LightOnOCRAPI:
                 if r.status_code == 200:
                     text = r.json()["choices"][0]["message"]["content"]
                     if not text:
-                        logger.warning(f"[LightOnOCRAPI] OpenAI: response 200 nhưng content rỗng.")
+                        logger.warning(f"[OCR API] OpenAI: response 200 nhưng content rỗng.")
                     return text
                 else:
-                    logger.error(f"[LightOnOCRAPI] OpenAI: HTTP {r.status_code} - {r.text[:200]}")
+                    logger.error(f"[OCR API] OpenAI: HTTP {r.status_code} - {r.text[:200]}")
                     raise RuntimeError(f"API HTTP {r.status_code}")
             except (requests.exceptions.ConnectionError,
                     requests.exceptions.Timeout) as e:
-                logger.warning(f"[LightOnOCRAPI] Connection error: {e}")
+                logger.warning(f"[OCR API] Connection error: {e}")
                 raise
             except Exception as e:
-                logger.error(f"[LightOnOCRAPI] Error: {e}")
+                logger.error(f"[OCR API] Error: {e}")
                 raise
         return ""
 
@@ -559,15 +559,28 @@ class LightOnOCRAPI:
         *,
         page_img: Optional[np.ndarray] = None,
         poly: Optional[list] = None,
+        vietnamese: bool = False,
+        lang: str = "",
     ) -> Tuple[str, float]:
         if page_img is not None and poly is not None:
             image = crop_for_lighton(poly, page_img)
 
-        prompt = (
-            "Extract all text from this image accurately. "
-            "Output ONLY the raw extracted text. "
-            "DO NOT output any notes, explanations, comments, or markdown code blocks."
-        )
+        if lang and lang.startswith('vi'):
+            vietnamese = True
+
+        if vietnamese:
+            prompt = (
+                "Trích xuất chính xác toàn bộ văn bản từ hình ảnh này. "
+                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
+                "CHỈ xuất ra văn bản thô được trích xuất. "
+                "KHÔNG xuất ra bất kỳ ghi chú, lời giải thích, bình luận hoặc khối mã markdown nào."
+            )
+        else:
+            prompt = (
+                "Extract all text from this image accurately. "
+                "Output ONLY the raw extracted text. "
+                "DO NOT output any notes, explanations, comments, or markdown code blocks."
+            )
         text = self._call_api(image, prompt)
         text = _clean_ocr_response(text, prompt)
         return text.strip(), (0.95 if text else 0.0)
@@ -592,8 +605,11 @@ class LightOnOCRAPI:
         if skeleton_html and "<table>" in skeleton_html:
             prompt = (
                 "Dưới đây là một ảnh chứa bảng và cấu trúc HTML khung của bảng đó đã được dựng sẵn (skeleton). "
-                "Hãy nhìn vào ảnh, đọc các chữ tiếng Việt và ĐIỀN ĐÚNG các chữ đó vào các ô <td> tương ứng trong khung HTML này. "
-                "Giữ nguyên cấu trúc thẻ <tr>, <td>, rowspan, colspan của khung HTML (trừ khi sai khác quá lớn so với ảnh). "
+                "CẢNH BÁO: Các chữ hiện có bên trong các thẻ <td> của SKELETON HTML là KẾT QUẢ NHẬN DIỆN BỊ LỖI (MẤT DẤU, SAI CHÍNH TẢ). "
+                "NHIỆM VỤ CỦA BẠN: Hãy nhìn trực tiếp vào ảnh, tự đọc lại toàn bộ các chữ tiếng Việt một cách chính xác, "
+                "và THAY THẾ HOÀN TOÀN các chữ lỗi trong SKELETON bằng chữ bạn vừa đọc được từ ảnh. "
+                "Tuyệt đối KHÔNG ĐƯỢC sao chép lại chữ lỗi từ skeleton. Nếu SKELETON bị sai cấu trúc (như gộp cột sai, thiếu cột so với ảnh), bạn ĐƯỢC PHÉP sửa lại các thẻ <td>, <tr>, rowspan, colspan cho đúng với thực tế ảnh. "
+                " "
                 "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
                 "Output ONLY a valid HTML <table>...</table>, KHÔNG kèm giải thích.\n"
                 f"SKELETON HTML:\n{skeleton_html}"
@@ -632,22 +648,22 @@ class LightOnOCRAPI:
                     result = result[start: end + len("</table>")]
                     break
                 elif "\\begin{table}" in result or "\\begin{tabular}" in result:
-                    logger.info("[LightOnOCRAPI] recognize_table: Nhận diện được định dạng LaTeX, giữ nguyên.")
+                    logger.info("[OCR API] recognize_table: Nhận diện được định dạng LaTeX, giữ nguyên.")
                     break
                 else:
                     # Phát hiện lỗi "nhại lại" Prompt
                     if len(result) < 200 and ("Đây là bảng" in result or "Extract the table" in result or "Output ONLY a valid HTML" in result):
-                        logger.warning("[LightOnOCRAPI] AI nhại lại prompt thay vì nhận diện bảng -> Ép chạy lại.")
+                        logger.warning("[OCR API] AI nhại lại prompt thay vì nhận diện bảng -> Ép chạy lại.")
                         result = ""  # Cố tình gán bằng rỗng để trigger block 'if not result' phía dưới
                     else:
                         logger.warning(
-                            f"[LightOnOCRAPI] recognize_table: output không chứa <table>, "
+                            f"[OCR API] recognize_table: output không chứa <table>, "
                             f"trả về văn bản thuần. preview={repr(result[:80])}"
                         )
                         break
 
             if not result:
-                logger.warning(f"[LightOnOCRAPI] recognize_table: API trả về kết quả rỗng (lần {attempt + 1}, temp={current_temp}). Tọa độ bảng (poly): {poly}")
+                logger.warning(f"[OCR API] recognize_table: API trả về kết quả rỗng (lần {attempt + 1}, temp={current_temp}). Tọa độ bảng (poly): {poly}")
                 if attempt < 2:
                     logger.info("Đang chờ 5s trước khi gọi lại API với độ sáng tạo (temperature) cao hơn...")
                     time.sleep(5)
@@ -869,9 +885,13 @@ class LightOnOCR:
         *,
         page_img: Optional[np.ndarray] = None,
         poly: Optional[list] = None,
+        vietnamese: Optional[bool] = None,
+        lang: Optional[str] = None,
     ) -> Tuple[str, float]:
+        if vietnamese is None and lang is None:
+            vietnamese = self._should_use_vietnamese_prompt(image)
         return self._with_fallback(
-            api_fn   = lambda: self._api.recognize_text(image, page_img=page_img, poly=poly),
+            api_fn   = lambda: self._api.recognize_text(image, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=lang),
             local_fn = lambda: self._get_local().recognize_text(image, page_img=page_img, poly=poly),
         )
 
@@ -925,15 +945,38 @@ class LightOnOCR:
         imgs = [img] if isinstance(img, np.ndarray) else img
         is_table = "table" in (tqdm_desc or "").lower()
 
+        if getattr(LightOnOCR, '_api_failed', False) or getattr(self, '_api', None) is None:
+            try:
+                local_name = self._get_local()._model_id.split('/')[-1]
+                if " " in tqdm_desc:
+                    tqdm_desc = f"{local_name} " + tqdm_desc.split(" ", 1)[1]
+                else:
+                    tqdm_desc = f"{local_name} {tqdm_desc}"
+            except Exception:
+                pass
+
         if tqdm_enable:
             from tqdm import tqdm
             iterator = tqdm(imgs, desc=tqdm_desc)
         else:
             iterator = imgs
 
+        def update_desc_if_local():
+            if tqdm_enable and (getattr(LightOnOCR, '_api_failed', False) or getattr(self, '_api', None) is None):
+                try:
+                    local_name = self._get_local()._model_id.split('/')[-1]
+                    if " " in iterator.desc:
+                        new_desc = f"{local_name} " + iterator.desc.split(" ", 1)[1]
+                    else:
+                        new_desc = f"{local_name} {iterator.desc}"
+                    iterator.set_description(new_desc)
+                except Exception:
+                    pass
+
         if is_table:
             results = []
             for image in iterator:
+                update_desc_if_local()
                 viet = vietnamese
                 if viet is None:
                     viet = self._should_use_vietnamese_prompt(image, auto_detect=True)
@@ -946,7 +989,8 @@ class LightOnOCR:
         ocr_res = []
         if det and rec:
             for image in iterator:
-                text, score = self.recognize_text(image, page_img=page_img, poly=poly)
+                update_desc_if_local()
+                text, score = self.recognize_text(image, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=kwargs.get('lang'))
                 if text:
                     h, w = (
                         image.shape[:2]
@@ -958,9 +1002,11 @@ class LightOnOCR:
                 else:
                     ocr_res.append(None)
         elif not det and rec:
-            ocr_res.append(
-                [self.recognize_text(image, page_img=page_img, poly=poly) for image in iterator]
-            )
+            res_list = []
+            for image in iterator:
+                update_desc_if_local()
+                res_list.append(self.recognize_text(image, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=kwargs.get('lang')))
+            ocr_res.append(res_list)
 
         return ocr_res
 

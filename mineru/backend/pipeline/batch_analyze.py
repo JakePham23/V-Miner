@@ -754,7 +754,7 @@ class BatchAnalyze:
                     table_res_dict["table_res"]["html"] = html_code[start_index:end_index]
 
             # Bước cuối: gửi ảnh bảng GỐC + skeleton HTML lên LightOnOCR (API hoặc Local VLM fallback) để refine
-            if os.environ.get("MINERU_TEXT_BACKEND") == "lighton" or "lighton" in os.environ.get("OPENAI_MODEL", "").lower():
+            if os.environ.get("MINERU_TEXT_BACKEND") == "lighton" or "lighton" in os.environ.get("OPENAI_MODEL", "").lower() or os.environ.get("_MINERU_API_AVAILABLE", "0") == "1":
                 from mineru.model.ocr.lighton_ocr import LightOnOCR
                 lighton_ocr = LightOnOCR()
                 model_name = os.environ.get("OPENAI_MODEL", "LLM OCR").split("/")[-1]
@@ -959,28 +959,15 @@ class BatchAnalyze:
                         ocr_res_list_dict['single_page_mfdetrec_res'], useful_list
                     )
                     bgr_image = cv2.cvtColor(new_image, cv2.COLOR_RGB2BGR)
-                    det_image = self._get_masked_det_image(
-                        bgr_image,
-                        adjusted_mfdetrec_res,
-                    )
-                    ocr_res = ocr_model.ocr(
-                        det_image, mfd_res=adjusted_mfdetrec_res, rec=False
-                    )[0]
-
-                    # Integration results
-                    if ocr_res:
-                        ocr_result_list = get_ocr_result_list(
-                            ocr_res,
-                            useful_list,
-                            ocr_res_list_dict['ocr_enable'],
-                            bgr_image,
-                            _lang,
-                        )
-
+                    
                     if has_text_det:
                         # --- Paddle: detection-only, then recognize separately ---
+                        det_image = self._get_masked_det_image(
+                            bgr_image,
+                            adjusted_mfdetrec_res,
+                        )
                         ocr_res = ocr_model.ocr(
-                            bgr_image, mfd_res=adjusted_mfdetrec_res, rec=False
+                            det_image, mfd_res=adjusted_mfdetrec_res, rec=False
                         )[0]
                         if ocr_res:
                             ocr_result_list = get_ocr_result_list(

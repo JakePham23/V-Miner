@@ -17,8 +17,8 @@ Model tự động tải về HuggingFace cache (~/.cache/huggingface) lần đ�
 from __future__ import annotations
 
 import os
-if "HF_ENDPOINT" not in os.environ:
-    os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+# if "HF_ENDPOINT" not in os.environ:
+#     os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
 
 import base64
@@ -41,7 +41,7 @@ _MIN_DIM_PX  = 640
 _MAX_DIM_PX  = 2048
 
 # HuggingFace model IDs
-_MLX_MODEL_ID  = "mlx-community/LightOnOCR-2-1B-bf16"
+_MLX_MODEL_ID  = "mlx-community/LightOnOCR-2-1B-4bit"
 _HF_MODEL_ID   = "lightonai/LightOnOCR-2-1B"
 
 

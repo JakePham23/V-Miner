@@ -265,7 +265,8 @@ class ConfigurableHybridOCR:
         else:
             # Use text backend for body text
             logger.debug(f"Using {self.text_backend_name} for text recognition")
-            return self.text_ocr.ocr(img, det, rec, mfd_res, tqdm_enable, tqdm_desc, **kwargs)
+            merged_kwargs = {**self.kwargs, **kwargs}
+            return self.text_ocr.ocr(img, det, rec, mfd_res, tqdm_enable, tqdm_desc, **merged_kwargs)
     
     def __call__(self, img, mfd_res=None):
         """
