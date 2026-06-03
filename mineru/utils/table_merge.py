@@ -14,6 +14,15 @@ from mineru.utils.table_continuation import is_table_continuation_text
 MAX_HEADER_ROWS = 5
 
 
+def _safe_get_int(val, default=1):
+    try:
+        if isinstance(val, str):
+            val = val.split('<')[0].strip()
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+
 @dataclass
 class RowMetrics:
     row_idx: int
@@ -104,8 +113,8 @@ def _scan_rows(rows, initial_occupied: dict[int, set[int]] | None = None, start_
             while col_idx in occupied_row:
                 col_idx += 1
 
-            colspan = int(cell.get("colspan", 1))
-            rowspan = int(cell.get("rowspan", 1))
+            colspan = _safe_get_int(cell.get("colspan", 1))
+            rowspan = _safe_get_int(cell.get("rowspan", 1))
             actual_cols += colspan
 
             for row_offset in range(rowspan):
@@ -150,8 +159,8 @@ def _build_row_signature(row, effective_cols: int) -> RowSignature:
     cells = row.find_all(["td", "th"])
     return RowSignature(
         effective_cols=effective_cols,
-        colspans=tuple(int(cell.get("colspan", 1)) for cell in cells),
-        rowspans=tuple(int(cell.get("rowspan", 1)) for cell in cells),
+        colspans=tuple(_safe_get_int(cell.get("colspan", 1)) for cell in cells),
+        rowspans=tuple(_safe_get_int(cell.get("rowspan", 1)) for cell in cells),
         normalized_texts=tuple(_normalize_cell_text(cell) for cell in cells),
         display_texts=tuple(_display_cell_text(cell) for cell in cells),
     )
@@ -387,7 +396,7 @@ def calculate_row_columns(row):
     column_count = 0
 
     for cell in cells:
-        colspan = int(cell.get("colspan", 1))
+        colspan = _safe_get_int(cell.get("colspan", 1))
         column_count += colspan
 
     return column_count
@@ -433,8 +442,8 @@ def _scan_row_visual_sources(
         for cell_idx, cell in enumerate(cells):
             while col_idx in occupied_row:
                 col_idx += 1
-            colspan = int(cell.get("colspan", 1))
-            rowspan = int(cell.get("rowspan", 1))
+            colspan = _safe_get_int(cell.get("colspan", 1))
+            rowspan = _safe_get_int(cell.get("rowspan", 1))
             source_marker = (r_idx, cell_idx)
             for ro in range(rowspan):
                 target_idx = r_idx + ro
@@ -475,7 +484,7 @@ def build_visual_col_mapping(
         while col_idx in target_occupied and target_occupied[col_idx][0] < target_row_index:
             col_idx += 1
         mapping.append(col_idx)
-        colspan = int(cell.get("colspan", 1))
+        colspan = _safe_get_int(cell.get("colspan", 1))
         col_idx += colspan
     return mapping
 
@@ -621,7 +630,13 @@ def _detect_table_headers_visual(
         # OCR 识别表头时可能丢失 colspan/rowspan，这里用渲染段数约束视觉一致性。
         rendered_segments1 = calculate_row_rendered_segments(state1.rows, row_idx)
         rendered_segments2 = calculate_row_rendered_segments(state2.rows, row_idx)
-        if row1.normalized_texts == row2.normalized_texts and rendered_segments1 == rendered_segments2:
+        
+        import difflib
+        text1 = " ".join(row1.normalized_texts)
+        text2 = " ".join(row2.normalized_texts)
+        similarity = difflib.SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
+        
+        if similarity >= 0.9 and rendered_segments1 == rendered_segments2:
             header_rows += 1
             header_texts.append(list(row1.display_texts))
         else:
@@ -649,7 +664,7 @@ def _expand_header_count_by_rowspan(rows, header_count: int) -> int:
     while row_idx < expanded_header_count:
         row = rows[row_idx]
         for cell in row.find_all(["td", "th"]):
-            rowspan = int(cell.get("rowspan", 1))
+            rowspan = _safe_get_int(cell.get("rowspan", 1))
             if rowspan > 1:
                 expanded_header_count = max(expanded_header_count, row_idx + rowspan)
                 expanded_header_count = min(expanded_header_count, len(rows))
@@ -849,7 +864,7 @@ def _carry_rowspan_structure_to_next_row(rows, row_idx: int) -> None:
     carried_cells = []
 
     for cell, start_vcol in zip(current_cells, current_vcol_map):
-        rowspan = int(cell.get("rowspan", 1))
+        rowspan = _safe_get_int(cell.get("rowspan", 1))
         if rowspan <= 1 or _cell_has_semantic_content(cell):
             continue
 
@@ -886,11 +901,11 @@ def _clip_overlapped_blank_rowspan_cells(
         cells = row.find_all(["td", "th"])
         visual_col_map = build_visual_col_mapping(rows, row_idx)
         for cell, start_vcol in zip(cells, visual_col_map):
-            rowspan = int(cell.get("rowspan", 1))
+            rowspan = _safe_get_int(cell.get("rowspan", 1))
             if rowspan <= 1 or _cell_has_semantic_content(cell):
                 continue
 
-            colspan = int(cell.get("colspan", 1))
+            colspan = _safe_get_int(cell.get("colspan", 1))
             occupied_cols = set(range(start_vcol, start_vcol + colspan))
             if not occupied_cols:
                 continue
@@ -1045,7 +1060,7 @@ def perform_table_merge(
 
         if table_cols1 > table_cols2:
             reference_structure = [
-                int(cell.get("colspan", 1)) for cell in last_row1.find_all(["td", "th"])
+                _safe_get_int(cell.get("colspan", 1)) for cell in last_row1.find_all(["td", "th"])
             ]
             reference_visual_cols = calculate_visual_columns(last_row1)
             adjust_table_rows_colspan(
@@ -1060,7 +1075,7 @@ def perform_table_merge(
             )
         elif table_cols2 > table_cols1:
             reference_structure = [
-                int(cell.get("colspan", 1)) for cell in first_data_row2.find_all(["td", "th"])
+                _safe_get_int(cell.get("colspan", 1)) for cell in first_data_row2.find_all(["td", "th"])
             ]
             reference_visual_cols = calculate_visual_columns(first_data_row2)
             adjust_table_rows_colspan(
@@ -1122,6 +1137,7 @@ def perform_table_merge(
 
 def merge_table(page_info_list):
     """合并跨页表格."""
+    import logging
     state_cache: dict[int, TableMergeState] = {}
     merged_away_blocks: set[int] = set()
 
@@ -1144,36 +1160,43 @@ def merge_table(page_info_list):
         current_table_block = page_info["para_blocks"][0]
         previous_table_block = previous_page_info["para_blocks"][-1]
 
-        current_state = _get_or_create_table_state(current_table_block, state_cache)
-        previous_state = _get_or_create_table_state(previous_table_block, state_cache)
-        if current_state is None or previous_state is None:
+        try:
+            current_state = _get_or_create_table_state(current_table_block, state_cache)
+            previous_state = _get_or_create_table_state(previous_table_block, state_cache)
+            if current_state is None or previous_state is None:
+                continue
+
+            post_table_caption_blocks = _get_post_table_caption_blocks(current_table_block)
+            wait_merge_table_footnotes = [
+                block for block in current_table_block["blocks"] if block["type"] == BlockType.TABLE_FOOTNOTE
+            ]
+
+            if not can_merge_tables(current_state, previous_state):
+                continue
+
+            perform_table_merge(
+                previous_state,
+                current_state,
+                previous_table_block,
+                wait_merge_table_footnotes,
+            )
+            _restore_post_table_captions_as_text(
+                page_info,
+                current_table_block,
+                post_table_caption_blocks,
+            )
+
+            merged_away_blocks.add(id(current_table_block))
+            for block in current_table_block["blocks"]:
+                block["lines"] = []
+                block[SplitFlag.LINES_DELETED] = True
+        except Exception as e:
+            logging.warning(f"Table merge failed between page {page_idx-1} and {page_idx}: {e}")
             continue
-
-        post_table_caption_blocks = _get_post_table_caption_blocks(current_table_block)
-        wait_merge_table_footnotes = [
-            block for block in current_table_block["blocks"] if block["type"] == BlockType.TABLE_FOOTNOTE
-        ]
-
-        if not can_merge_tables(current_state, previous_state):
-            continue
-
-        perform_table_merge(
-            previous_state,
-            current_state,
-            previous_table_block,
-            wait_merge_table_footnotes,
-        )
-        _restore_post_table_captions_as_text(
-            page_info,
-            current_table_block,
-            post_table_caption_blocks,
-        )
-
-        merged_away_blocks.add(id(current_table_block))
-        for block in current_table_block["blocks"]:
-            block["lines"] = []
-            block[SplitFlag.LINES_DELETED] = True
 
     for state in state_cache.values():
         if state.dirty and id(state.owner_block) not in merged_away_blocks:
-            _serialize_table_state_html(state)
+            try:
+                _serialize_table_state_html(state)
+            except Exception as e:
+                logging.warning(f"Table serialize failed: {e}")

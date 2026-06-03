@@ -10,8 +10,8 @@ from mineru.utils.pdfium_guard import pdfium_guard
 
 def page_to_image(
     page: PdfPage,
-    dpi: int = 200,
-    max_width_or_height: int = 3500,  # changed from 4500 to 3500
+    dpi: int = 144,
+    max_width_or_height: int = 1280,  # Match hybrid _MAX_DIM_PX
 ) -> (Image.Image, float):
     with pdfium_guard():
         scale = dpi / 72
@@ -23,6 +23,13 @@ def page_to_image(
         bitmap: PdfBitmap = page.render(scale=scale)  # type: ignore
 
         image = bitmap.to_pil()
+        
+        # Nén JPEG chất lượng 95 giống hybrid
+        import io
+        buffer = io.BytesIO()
+        image.convert("RGB").save(buffer, format="JPEG", quality=95)
+        buffer.seek(0)
+        image = Image.open(buffer).copy()
         try:
             bitmap.close()
         except Exception as e:

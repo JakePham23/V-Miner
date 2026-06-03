@@ -455,6 +455,8 @@ class BatchAnalyze:
                     if "category_id" not in block and "cls_id" in block:
                         block["category_id"] = PP_TO_YOLO_MAP.get(block["cls_id"], 1)
 
+        # ── Layout-Driven Loading: kiểm tra xem batch này có công thức không ──
+        # Chỉ trigger lazy load MFR model khi thực sự có công thức trong tài liệu
         if self.formula_enable:
             images_mfd_res = []
             for layout_res in images_layout_res:
@@ -465,22 +467,29 @@ class BatchAnalyze:
                         page_formula_res.append(res)
                 images_mfd_res.append(page_formula_res)
 
-            # 公式识别
-            images_formula_list = self.model.mfr_model.batch_predict(
-                images_mfd_res,
-                np_images,
-                batch_size=self.batch_ratio * MFR_BASE_BATCH_SIZE,
-            )
-            mfr_count = 0
-            for image_index in range(len(np_images)):
-                mfr_count += len(images_formula_list[image_index])
-                for formula_res, formula_with_latex in zip(
-                    images_mfd_res[image_index], images_formula_list[image_index]
-                ):
-                    formula_res["latex"] = formula_with_latex.get("latex", "")
+            # Đếm tổng số công thức trong batch này
+            total_formulas = sum(len(p) for p in images_mfd_res)
 
-            # 清理显存
-            clean_vram(self.model.device, vram_threshold=8)
+            if total_formulas > 0:
+                # Chỉ load MFR model (lazy) khi batch thực sự có công thức
+                logger.info(f'[Layout-Driven] Detected {total_formulas} formula(s) → loading MFR model if not yet loaded.')
+                images_formula_list = self.model.mfr_model.batch_predict(
+                    images_mfd_res,
+                    np_images,
+                    batch_size=self.batch_ratio * MFR_BASE_BATCH_SIZE,
+                )
+                mfr_count = 0
+                for image_index in range(len(np_images)):
+                    mfr_count += len(images_formula_list[image_index])
+                    for formula_res, formula_with_latex in zip(
+                        images_mfd_res[image_index], images_formula_list[image_index]
+                    ):
+                        formula_res["latex"] = formula_with_latex.get("latex", "")
+
+                # 清理显存
+                clean_vram(self.model.device, vram_threshold=8)
+            else:
+                logger.debug('[Layout-Driven] No formulas in this batch → MFR model not loaded.')
 
         else:
             for layout_res in images_layout_res:
@@ -587,11 +596,13 @@ class BatchAnalyze:
                                               })
 
         # 表格识别 table recognition - thuật toán chuẩn MinerU
+        # ── Layout-Driven Loading: chỉ load Table models khi batch có bảng ───
         if self.table_enable:
             # Tất cả bảng đều đi qua thuật toán chuẩn (không phân loại)
             standard_table_list = table_res_list_all_page
 
             if standard_table_list:
+                logger.info(f'[Layout-Driven] Detected {len(standard_table_list)} table(s) → loading Table models if not yet loaded.')
                 # 图片旋转批量处理
                 img_orientation_cls_model = atom_model_manager.get_atom_model(
                     atom_model_name=AtomicModel.TableOrientationCls,

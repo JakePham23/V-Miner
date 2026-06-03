@@ -36,12 +36,12 @@ from PIL import Image
 from loguru import logger
 
 
-# ── Constants ────────────────────────────────────────────────────────────────
-_PAD_RATIO   = 0.04
+# ── Image processing constants ──────────────────────────────────────────────────
+_PAD_RATIO   = 0.04  # 4% padding
 _PAD_MIN_PX  = 6
 _PAD_MAX_PX  = 20
-_MIN_DIM_PX  = 640
-_MAX_DIM_PX  = 2048
+_MIN_DIM_PX  = 320   # Giảm từ 640 xuống 320
+_MAX_DIM_PX  = 1280  # Giảm từ 2048 xuống 1280
 
 # Regex nhận diện ký tự tiếng Việt có dấu
 _VIET_DIACRITIC_RE = re.compile(
@@ -422,34 +422,10 @@ def _preprocess_image(image: np.ndarray) -> np.ndarray:
 
 def _is_vietnamese_content(image: Union[np.ndarray, Image.Image]) -> bool:
     """
-    Heuristic: quét nhanh ảnh để phát hiện ký tự tiếng Việt có dấu.
-    Dùng easyocr nhẹ (chỉ recognition, không detection) nếu có,
-    hoặc fallback về check tỉ lệ pixel phức tạp (luôn False để an toàn).
+    Heuristic: phát hiện nội dung tiếng Việt.
+    EasyOCR đã bị xóa — trả về False để pipeline dùng lang mặc định của caller.
     """
-    try:
-        import easyocr  # type: ignore
-        # Reader singleton (tái dùng)
-        if not hasattr(_is_vietnamese_content, "_reader"):
-            _is_vietnamese_content._reader = easyocr.Reader(['vi'], gpu=False, verbose=False)
-        reader = _is_vietnamese_content._reader
-
-        if isinstance(image, np.ndarray):
-            pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if image.ndim == 3 else image)
-        else:
-            pil = image.convert("RGB")
-
-        # Resize nhỏ để nhanh
-        pil_small = pil.resize((min(pil.width, 400), min(pil.height, 200)))
-        results = reader.readtext(np.array(pil_small), detail=0)
-        combined = " ".join(results)
-        viet_count = len(_VIET_DIACRITIC_RE.findall(combined))
-        total_chars = max(len(combined.replace(" ", "")), 1)
-        ratio = viet_count / total_chars
-        logger.debug(f"[vi-detect] viet_chars={viet_count}/{total_chars} ratio={ratio:.2f}")
-        return ratio > 0.05  # Nếu >5% ký tự là tiếng Việt → True
-    except Exception:
-        # Không có easyocr hoặc lỗi → không tự detect, để caller quyết định
-        return False
+    return False
 
 
 # ── LightOnOCRAPI (internal, API-only) ───────────────────────────────────────
@@ -466,7 +442,7 @@ class LightOnOCRAPI:
         self.timeout    = timeout
         self.drop_score = kwargs.get("drop_score", 0.5)
         self._headers   = build_api_headers(self._cfg)
-        logger.info(f"[OCR API] URL={self.server_url!r} model={self.model_name!r} service={self._cfg.llm_service!r}")
+        logger.debug(f"[OCR API] URL={self.server_url!r} model={self.model_name!r} service={self._cfg.llm_service!r}")
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
@@ -605,9 +581,9 @@ class LightOnOCRAPI:
         if skeleton_html and "<table>" in skeleton_html:
             prompt = (
                 "Dưới đây là một ảnh chứa bảng và cấu trúc HTML khung của bảng đó đã được dựng sẵn (skeleton). "
-                "CẢNH BÁO: Các chữ hiện có bên trong các thẻ <td> của SKELETON HTML là KẾT QUẢ NHẬN DIỆN BỊ LỖI (MẤT DẤU, SAI CHÍNH TẢ). "
+                "CẢNH BÁO: Các chữ hiện có bên trong các thẻ <td>, <th> của SKELETON HTML là KẾT QUẢ NHẬN DIỆN BỊ LỖI (MẤT DẤU, SAI CHÍNH TẢ). "
                 "NHIỆM VỤ CỦA BẠN: Hãy nhìn trực tiếp vào ảnh, tự đọc lại toàn bộ các chữ tiếng Việt một cách chính xác, "
-                "và THAY THẾ HOÀN TOÀN các chữ lỗi trong SKELETON bằng chữ bạn vừa đọc được từ ảnh. "
+                "và THAY THẾ HOÀN TOÀN các chữ lỗi xuất hiện trong SKELETON bằng chữ bạn vừa đọc được từ ảnh. "
                 "Tuyệt đối KHÔNG ĐƯỢC sao chép lại chữ lỗi từ skeleton. Nếu SKELETON bị sai cấu trúc (như gộp cột sai, thiếu cột so với ảnh), bạn ĐƯỢC PHÉP sửa lại các thẻ <td>, <tr>, rowspan, colspan cho đúng với thực tế ảnh. "
                 " "
                 "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
@@ -674,10 +650,9 @@ class LightOnOCRAPI:
         """OCR toàn bộ trang PDF thành Markdown sử dụng VLM API."""
         prompt = (
             "Bạn là một trợ lý OCR chuyên nghiệp. Hãy đọc toàn bộ văn bản, cấu trúc bảng biểu, "
-            "danh sách và hình ảnh trong bức ảnh trang tài liệu này, sau đó chuyển đổi thành định dạng Markdown chính xác nhất. "
-            "Nhận diện rõ title và heading: in đậm đứng đầu dòng là heading, còn trong table, trong đoạn văn thì là in đậm <br>. "
+            "danh sách và hình ảnh trong bức ảnh trang tài liệu này. "
             "Hãy giữ nguyên tiếng Việt có dấu và cấu trúc trang. "
-            "LƯU Ý: Chỉ trả về nội dung Markdown kết quả, KHÔNG thêm bất kỳ câu chào hỏi, giải thích hay bọc trong thẻ code block markdown (như ```markdown) nào."
+            "LƯU Ý: Chỉ trả về nội dung văn bản kết quả, KHÔNG thêm bất kỳ câu chào hỏi, giải thích hay bọc trong thẻ code block nào."
         )
         result = self._call_api(image, prompt, temperature=0.0)
         return _clean_ocr_response(result, prompt).strip()
@@ -767,6 +742,7 @@ class LightOnOCR:
     """
 
     _api_failed = False
+    _shared_local_model = None
 
     def __init__(
         self,
@@ -790,7 +766,7 @@ class LightOnOCR:
                     timeout=timeout,
                     **kwargs,
                 )
-                logger.info("[LightOnOCR] API backend initialized.")
+                logger.debug("[LightOnOCR] API backend initialized.")
             except Exception as e:
                 logger.warning(f"[LightOnOCR] API backend init failed: {e}")
                 self._api = None
@@ -802,7 +778,7 @@ class LightOnOCR:
         self._local = None
         self._local_kwargs = kwargs
 
-        logger.info(
+        logger.debug(
             f"[LightOnOCR] service={self._cfg.llm_service!r} "
             f"use_api={self._cfg.use_api} use_local={self._cfg.use_local}"
         )
@@ -810,7 +786,7 @@ class LightOnOCR:
     # ── Lazy local loader ─────────────────────────────────────────────────────
 
     def _get_local(self):
-        if self._local is None:
+        if LightOnOCR._shared_local_model is None:
             if not self._cfg.use_local:
                 raise RuntimeError(
                     "[LightOnOCR] Local backend is disabled. "
@@ -818,8 +794,22 @@ class LightOnOCR:
                 )
             logger.info("[LightOnOCR] Loading local model (first use)...")
             from mineru.model.ocr.lighton_model_local import LightOnModelLocal
-            self._local = LightOnModelLocal(**self._local_kwargs)
-        return self._local
+            LightOnOCR._shared_local_model = LightOnModelLocal(**self._local_kwargs)
+        return LightOnOCR._shared_local_model
+
+    # ── Offload ───────────────────────────────────────────────────────────────
+
+    @classmethod
+    def offload_local_model(cls):
+        """Free the shared local model from memory."""
+        if cls._shared_local_model is not None:
+            logger.info("[LightOnOCR] Offloading shared local model...")
+            cls._shared_local_model.offload()
+            cls._shared_local_model = None
+
+    def offload(self):
+        """Instance method to offload the shared local model."""
+        self.offload_local_model()
 
     # ── API availability check ────────────────────────────────────────────────
 

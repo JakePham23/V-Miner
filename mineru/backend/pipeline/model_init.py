@@ -157,10 +157,10 @@ def ocr_model_init(det_db_box_thresh=0.5,
         logger.info(f"Initializing OCR model for language: {lang}")
     # Route to appropriate OCR backend
     if lang == 'vi-light-ocr':
-        # Hybrid: EasyOCR for text + LightOnOCR for tables (via LM Studio)
-        from mineru.model.ocr.hybrid_light_ocr import HybridLightOCR
-        logger.info("Using Hybrid OCR backend (EasyOCR + LightOnOCR) for Vietnamese")
-        return HybridLightOCR()
+        # LightOnOCR for text + tables (via LM Studio)
+        from mineru.model.ocr.lighton_ocr import LightOnOCR
+        logger.info("Using LightOnOCR backend for Vietnamese (vi-light-ocr mode)")
+        return LightOnOCR()
     
     elif lang == 'vi-vision-light':
         # Hybrid: Vision Framework for text + LightOnOCR for tables
@@ -175,13 +175,13 @@ def ocr_model_init(det_db_box_thresh=0.5,
         return HybridVisionLightOCR()
     
     elif lang == 'vi-hybrid':
-        from mineru.model.ocr.hybrid_light_ocr import HybridLightOCR
-        return HybridLightOCR()
+        from mineru.model.ocr.lighton_ocr import LightOnOCR
+        return LightOnOCR()
     
     elif lang == 'vi-custom':
         from mineru.model.ocr.configurable_hybrid_ocr import ConfigurableHybridOCR
         return ConfigurableHybridOCR(
-            text_backend='easyocr',
+            text_backend='lighton',
             table_backend='rapidtable',
             image_backend='paddle',
             det_db_box_thresh=det_db_box_thresh,
@@ -189,13 +189,12 @@ def ocr_model_init(det_db_box_thresh=0.5,
         )
     
     elif lang == 'vi-vision':
-
         # Apple Vision Framework (macOS only)
         import sys
         if sys.platform != 'darwin':
-            logger.warning(f"vi-vision mode requires macOS, falling back to EasyOCR")
-            from mineru.model.ocr.easy_ocr import EasyOCR
-            return EasyOCR(lang='vi')
+            logger.warning(f"vi-vision mode requires macOS, falling back to LightOnOCR")
+            from mineru.model.ocr.lighton_ocr import LightOnOCR
+            return LightOnOCR()
         
         from mineru.model.ocr.vision_ocr import VisionFrameworkOCR
         logger.info("Using Apple Vision Framework for Vietnamese OCR")
@@ -203,10 +202,10 @@ def ocr_model_init(det_db_box_thresh=0.5,
 
     
     elif lang in ['vi', 'vietnamese', 'vie']:
-        # EasyOCR for Vietnamese
-        from mineru.model.ocr.easy_ocr import EasyOCR
-        logger.info("Using EasyOCR backend for Vietnamese")
-        return EasyOCR(lang='vi')
+        # LightOnOCR for Vietnamese (replaces EasyOCR)
+        from mineru.model.ocr.lighton_ocr import LightOnOCR
+        logger.info("Using LightOnOCR backend for Vietnamese")
+        return LightOnOCR()
     
     elif lang == 'vi-paddle-ocr':
         # Original PaddleOCR for Vietnamese (fallback option)
@@ -331,6 +330,18 @@ def atom_model_init(model_name: str, **kwargs):
 
 
 class MineruPipelineModel:
+    """
+    Pipeline model container với Lazy Loading + Layout-Driven Loading.
+
+    - layout_model, ocr_model: load ngay lúc __init__ (luôn cần)
+    - mfr_model, wired_table_model, wireless_table_model,
+      table_cls_model, img_orientation_cls_model: lazy property —
+      chỉ load từ đĩa khi lần đầu tiên được truy cập, tức là SAU KHI
+      layout detection xác nhận tài liệu có công thức / bảng.
+
+    Tiết kiệm ~1.5-2 GB RAM cho tài liệu thuần text.
+    """
+
     def __init__(self, **kwargs):
         self.formula_config = kwargs.get('formula_config')
         self.apply_formula = self.formula_config.get('enable', True)
@@ -338,13 +349,50 @@ class MineruPipelineModel:
         self.apply_table = self.table_config.get('enable', True)
         self.lang = kwargs.get('lang', None)
         self.device = kwargs.get('device', 'cpu')
-        logger.info(
-            'DocAnalysis init, this may take some times......'
-        )
+
+        # ── Lazy model slots (None = chưa load) ──────────────────────────────
+        self._mfr_model = None
+        self._wired_table_model = None
+        self._wireless_table_model = None
+        self._table_cls_model = None
+        self._img_orientation_cls_model = None
+
+        logger.info('DocAnalysis init, loading Layout + OCR models...')
         atom_model_manager = AtomModelSingleton()
 
-        if self.apply_formula:
-            # 初始化公式解析模型
+        # ── Eager: Layout (luôn cần ngay từ bước đầu) ────────────────────────
+        self.layout_model = atom_model_manager.get_atom_model(
+            atom_model_name=AtomicModel.Layout,
+            pp_doclayout_v2_weights=str(
+                os.path.join(
+                    auto_download_and_get_model_root_path(ModelPath.pp_doclayout_v2),
+                    ModelPath.pp_doclayout_v2,
+                )
+            ),
+            device=self.device,
+        )
+
+        # ── Eager: OCR (luôn cần cho text recognition) ───────────────────────
+        _check_api_available()
+        self.ocr_model = atom_model_manager.get_atom_model(
+            atom_model_name=AtomicModel.OCR,
+            lang=self.lang,
+        )
+
+        logger.info(
+            'DocAnalysis init done! '
+            f'[formula={self.apply_formula}, table={self.apply_table}] '
+            'MFR + Table models will load on-demand after layout analysis.'
+        )
+
+    # ── Lazy property: MFR (công thức) ───────────────────────────────────────
+
+    @property
+    def mfr_model(self):
+        if self._mfr_model is None:
+            if not self.apply_formula:
+                raise RuntimeError("MFR model requested but formula is disabled.")
+            logger.info('[LazyLoad] Loading MFR (formula recognition) model...')
             if MFR_MODEL == "unimernet_small":
                 mfr_model_path = ModelPath.unimernet_small
             elif MFR_MODEL == "pp_formulanet_plus_m":
@@ -352,47 +400,71 @@ class MineruPipelineModel:
             else:
                 logger.error('MFR model name not allow')
                 exit(1)
-
-            self.mfr_model = atom_model_manager.get_atom_model(
+            self._mfr_model = AtomModelSingleton().get_atom_model(
                 atom_model_name=AtomicModel.MFR,
-                mfr_weight_dir=str(os.path.join(auto_download_and_get_model_root_path(mfr_model_path), mfr_model_path)),
+                mfr_weight_dir=str(
+                    os.path.join(
+                        auto_download_and_get_model_root_path(mfr_model_path),
+                        mfr_model_path,
+                    )
+                ),
                 device=self.device,
             )
+            logger.info('[LazyLoad] MFR model loaded.')
+        return self._mfr_model
 
-        # 初始化layout模型
-        self.layout_model = atom_model_manager.get_atom_model(
-            atom_model_name=AtomicModel.Layout,
-            pp_doclayout_v2_weights=str(
-                os.path.join(auto_download_and_get_model_root_path(ModelPath.pp_doclayout_v2), ModelPath.pp_doclayout_v2)
-            ),
-            device=self.device,
-        )
-        # Ping API once before OCR init so singleton key is stable
-        _check_api_available()
-        # 初始化ocr
-        self.ocr_model = atom_model_manager.get_atom_model(
-            atom_model_name=AtomicModel.OCR,
-            lang=self.lang
-        )
-        # init table model
-        if self.apply_table:
-            self.wired_table_model = atom_model_manager.get_atom_model(
+    # ── Lazy property: Table models (4 model) ────────────────────────────────
+
+    @property
+    def wired_table_model(self):
+        if self._wired_table_model is None:
+            if not self.apply_table:
+                raise RuntimeError("WiredTable model requested but table is disabled.")
+            logger.info('[LazyLoad] Loading WiredTable model...')
+            self._wired_table_model = AtomModelSingleton().get_atom_model(
                 atom_model_name=AtomicModel.WiredTable,
                 lang=self.lang,
             )
-            self.wireless_table_model = atom_model_manager.get_atom_model(
+            logger.info('[LazyLoad] WiredTable model loaded.')
+        return self._wired_table_model
+
+    @property
+    def wireless_table_model(self):
+        if self._wireless_table_model is None:
+            if not self.apply_table:
+                raise RuntimeError("WirelessTable model requested but table is disabled.")
+            logger.info('[LazyLoad] Loading WirelessTable model...')
+            self._wireless_table_model = AtomModelSingleton().get_atom_model(
                 atom_model_name=AtomicModel.WirelessTable,
                 lang=self.lang,
             )
-            self.table_cls_model = atom_model_manager.get_atom_model(
+            logger.info('[LazyLoad] WirelessTable model loaded.')
+        return self._wireless_table_model
+
+    @property
+    def table_cls_model(self):
+        if self._table_cls_model is None:
+            if not self.apply_table:
+                raise RuntimeError("TableCls model requested but table is disabled.")
+            logger.info('[LazyLoad] Loading TableCls model...')
+            self._table_cls_model = AtomModelSingleton().get_atom_model(
                 atom_model_name=AtomicModel.TableCls,
             )
-            self.img_orientation_cls_model = atom_model_manager.get_atom_model(
+            logger.info('[LazyLoad] TableCls model loaded.')
+        return self._table_cls_model
+
+    @property
+    def img_orientation_cls_model(self):
+        if self._img_orientation_cls_model is None:
+            if not self.apply_table:
+                raise RuntimeError("TableOrientationCls model requested but table is disabled.")
+            logger.info('[LazyLoad] Loading TableOrientationCls model...')
+            self._img_orientation_cls_model = AtomModelSingleton().get_atom_model(
                 atom_model_name=AtomicModel.TableOrientationCls,
                 lang=self.lang,
             )
-
-        logger.info('DocAnalysis init done!')
+            logger.info('[LazyLoad] TableOrientationCls model loaded.')
+        return self._img_orientation_cls_model
 
 
 class HybridModelSingleton:

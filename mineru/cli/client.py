@@ -1080,7 +1080,7 @@ async def run_orchestrated_cli(
     Adapted only for the case where the backend is set to 'pipeline' and 'hybrid-*'.
 
     Vietnamese modes:
-      vi          : EasyOCR for text + LightOnOCR (LM Studio) for tables (recommended for Vietnamese PDFs)
+      vi          : LightOnOCR (LM Studio) for text + tables (recommended for Vietnamese PDFs)
       vi-light-ocr: Alias for vi (same behavior)
     """,
 )

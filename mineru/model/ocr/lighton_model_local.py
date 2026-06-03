@@ -37,8 +37,8 @@ from loguru import logger
 _PAD_RATIO   = 0.04
 _PAD_MIN_PX  = 6
 _PAD_MAX_PX  = 20
-_MIN_DIM_PX  = 640
-_MAX_DIM_PX  = 2048
+_MIN_DIM_PX  = 320   # Giảm từ 640 xuống 320 để tiết kiệm RAM cho các crop nhỏ
+_MAX_DIM_PX  = 1280  # Giảm từ 2048 xuống 1280 (giảm ~60% lượng token vision)
 
 # HuggingFace model IDs
 _MLX_MODEL_ID  = "mlx-community/LightOnOCR-2-1B-4bit"
@@ -187,6 +187,19 @@ class _MLXRunner:
             return res.text
         return str(res)
 
+    def offload(self):
+        """Free memory by deleting model and processor, clearing MLX cache."""
+        self._model = None
+        self._processor = None
+        try:
+            import mlx.core as mx
+            if hasattr(mx, "metal") and hasattr(mx.metal, "clear_cache"):
+                mx.metal.clear_cache()
+        except ImportError:
+            pass
+        import gc
+        gc.collect()
+
 
 # ── Transformers backend ──────────────────────────────────────────────────────
 
@@ -240,6 +253,21 @@ class _TransformersRunner:
         output = self._processor.batch_decode(new_ids, skip_special_tokens=True)[0]
         return output
 
+    def offload(self):
+        """Free memory by deleting model and emptying CUDA cache."""
+        self._model = None
+        self._processor = None
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+        except Exception:
+            pass
+        import gc
+        gc.collect()
+
 
 # ── Main local class ──────────────────────────────────────────────────────────
 
@@ -290,6 +318,13 @@ class LightOnModelLocal:
             return _TransformersRunner(hf_id)
         else:
             raise ValueError(f"Unknown local backend: {self._backend!r}. Use 'mlx' or 'transformers'.")
+
+    def offload(self):
+        """Offload the local model to free memory."""
+        if self._runner is not None and hasattr(self._runner, "offload"):
+            logger.info(f"[LightOnModelLocal] Offloading {self._backend} model to free memory...")
+            self._runner.offload()
+            self._runner = None
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 
