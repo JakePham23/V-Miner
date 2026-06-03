@@ -34,7 +34,11 @@ class HybridVisionLightOCR:
         logger.info("Initializing LightOnOCR for table processing")
         import os
         from mineru.model.ocr.lighton_ocr import LightOnOCR
-        self.light_ocr = LightOnOCR(**kwargs)
+        self.light_ocr = LightOnOCR(
+            server_url=os.getenv('LIGHTON_SERVER_URL', 'http://localhost:1234/v1/chat/completions'),
+            model_name=os.getenv('LIGHTON_MODEL_NAME', 'lightonocr'),
+            **kwargs
+        )
         
         logger.info("HybridVisionLightOCR initialized successfully")
     

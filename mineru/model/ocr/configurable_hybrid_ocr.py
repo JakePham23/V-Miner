@@ -1,7 +1,7 @@
 """
 Configurable Hybrid OCR wrapper for MinerU pipeline.
 Allows flexible OCR backend selection for different content types:
-- Body text: PaddleOCR / EasyOCR / Vision / LightOnOCR (configurable)
+- Body text: PaddleOCR / Vision / LightOnOCR (configurable)
 - Tables: configurable (lighton recommended)
 - Images: configurable (lighton recommended)
 """
@@ -23,13 +23,13 @@ class ConfigurableHybridOCR:
     using LightOnOCR for tables and images for optimal results.
     """
     
-    SUPPORTED_TEXT_BACKENDS = ['paddle', 'easyocr', 'vision', 'lighton', 'paddle-vi']
-    SUPPORTED_TABLE_BACKENDS = ['paddle', 'easyocr', 'vision', 'lighton', 'rapidtable', 'default']
-    SUPPORTED_IMAGE_BACKENDS = ['paddle', 'easyocr', 'vision', 'lighton']
+    SUPPORTED_TEXT_BACKENDS = ['paddle', 'vision', 'lighton', 'paddle-vi']
+    SUPPORTED_TABLE_BACKENDS = ['paddle', 'vision', 'lighton', 'rapidtable', 'default']
+    SUPPORTED_IMAGE_BACKENDS = ['paddle', 'vision', 'lighton']
     
     def __init__(
         self,
-        text_backend: str = 'easyocr',
+        text_backend: str = 'lighton',
         table_backend: str = 'lighton',
         image_backend: str = 'lighton',
         **kwargs
@@ -38,16 +38,16 @@ class ConfigurableHybridOCR:
         Initialize configurable hybrid OCR.
         
         Args:
-            text_backend: OCR backend for body text ('paddle', 'easyocr', 'vision', 'lighton')
-            table_backend: OCR backend for tables ('paddle', 'easyocr', 'vision', 'lighton')
-            image_backend: OCR backend for images ('paddle', 'easyocr', 'vision', 'lighton')
+            text_backend: OCR backend for body text ('paddle', 'vision', 'lighton')
+            table_backend: OCR backend for tables ('paddle', 'vision', 'lighton')
+            image_backend: OCR backend for images ('paddle', 'vision', 'lighton')
             **kwargs: Additional arguments passed to OCR engines
         """
         self.text_backend_name = text_backend.lower()
         self.table_backend_name = table_backend.lower()
         self.image_backend_name = image_backend.lower()
         self.kwargs = kwargs
-        # Generic kwargs stripped of Paddle-only keys (passed to EasyOCR / LightOnOCR)
+        # Generic kwargs stripped of Paddle-only keys (passed to LightOnOCR)
         self._generic_kwargs = {k: v for k, v in kwargs.items() if k not in PADDLE_ONLY_KEYS}
         self.is_table_mode = False
         self.is_image_mode = False
@@ -56,9 +56,9 @@ class ConfigurableHybridOCR:
         if self.text_backend_name not in self.SUPPORTED_TEXT_BACKENDS:
             logger.warning(
                 f"Unsupported text backend '{text_backend}'. "
-                f"Supported: {self.SUPPORTED_TEXT_BACKENDS}. Falling back to 'easyocr'"
+                f"Supported: {self.SUPPORTED_TEXT_BACKENDS}. Falling back to 'paddle'"
             )
-            self.text_backend_name = 'easyocr'
+            self.text_backend_name = 'paddle'
         
         if self.table_backend_name not in self.SUPPORTED_TABLE_BACKENDS:
             logger.warning(
@@ -122,51 +122,53 @@ class ConfigurableHybridOCR:
             # Uses the simple wrapper for proper Vietnamese support
             return SimplePaddle(lang='vi', **self._generic_kwargs)
             
-        elif backend_name == 'easyocr':
-            from .easy_ocr import EasyOCR
-            # Only pass generic kwargs (no paddle-specific args)
-            return EasyOCR(lang='vi', **self._generic_kwargs)
-            
         elif backend_name == 'vision':
             # Check if running on macOS
             if sys.platform != 'darwin':
                 logger.warning(
                     f"Vision Framework requires macOS for {backend_type}, but running on {sys.platform}. "
-                    "Falling back to EasyOCR"
+                    "Falling back to PaddleOCR"
                 )
-                from .easy_ocr import EasyOCR
-                return EasyOCR(lang='vi', **self._generic_kwargs)
+                from .pytorch_paddle import PytorchPaddleOCR
+                return PytorchPaddleOCR(**self.kwargs)
             
             from .vision_ocr import VisionFrameworkOCR
             return VisionFrameworkOCR(**self._generic_kwargs)
         
         elif backend_name == 'lighton':
             from .lighton_ocr import LightOnOCR
-            # Only pass generic kwargs (no paddle-specific args)
+            # Đọc config qua lighton_config (hỗ trợ LLM_SERVICE, OPENAI_API_BASE, OPENAI_MODEL ...)
             return LightOnOCR(**self._generic_kwargs)
         
         elif backend_name in ['rapidtable', 'default']:
             # Use MinerU's default RapidTable mechanism
-            # For OCR text within tables/images, this falls back to PaddleOCR
-            # but table structure recognition uses RapidTable (the MinerU default)
             logger.info(f"Using MinerU default (RapidTable + PaddleOCR) for {backend_type}")
             from .pytorch_paddle import PytorchPaddleOCR
             return PytorchPaddleOCR(**self.kwargs)
         
         else:
             # Should never reach here due to validation, but just in case
-            logger.error(f"Unknown backend: {backend_name} for {backend_type}, using EasyOCR")
-            from .easy_ocr import EasyOCR
-            return EasyOCR(lang='vi', **self._generic_kwargs)
+            logger.error(f"Unknown backend: {backend_name} for {backend_type}, using PaddleOCR")
+            from .pytorch_paddle import PytorchPaddleOCR
+            return PytorchPaddleOCR(**self.kwargs)
     
     @property
     def has_text_detector(self) -> bool:
         """
         Return True if the active text backend supports batch detection
         (i.e. has a .text_detector attribute like PytorchPaddleOCR).
-        EasyOCR and LightOnOCR do NOT support this — they do full-image OCR.
+        LightOnOCR does NOT support this — it does full-image OCR.
         """
         return hasattr(self.text_ocr, 'text_detector')
+
+    @property
+    def text_detector(self):
+        """
+        Expose text_detector so that caller can use .batch_predict()
+        """
+        if self.has_text_detector:
+            return self.text_ocr.text_detector
+        raise AttributeError("The active text backend does not have a text_detector.")
     
     def full_page_ocr(self, img: np.ndarray, mfd_res=None):
         """
@@ -231,6 +233,19 @@ class ConfigurableHybridOCR:
         is_table = 'table' in tqdm_desc.lower() if tqdm_desc else False
         is_image = any(keyword in tqdm_desc.lower() for keyword in ['image', 'figure', 'img']) if tqdm_desc else False
         
+        # Backends like LightOnOCR don't support det-only (bounding box extraction without recognition).
+        # When det=True and rec=False (e.g., Table-ocr det), we MUST use a real detector like PaddleOCR.
+        if det and not rec:
+            if not hasattr(self, '_fallback_det_engine'):
+                from .pytorch_paddle import PytorchPaddleOCR
+                logger.info("Initializing PaddleOCR as fallback detector for det-only request")
+                det_kwargs = self.kwargs.copy()
+                # Default to 'ch' if language is 'auto' or not standard Paddle OCR supported language
+                if det_kwargs.get('lang') in ['auto', None, ''] or det_kwargs.get('lang', '').startswith('vi'):
+                    det_kwargs['lang'] = 'ch'
+                self._fallback_det_engine = PytorchPaddleOCR(**det_kwargs)
+            return self._fallback_det_engine.ocr(img, det, rec, mfd_res, tqdm_enable, tqdm_desc, **kwargs)
+
         # Route to appropriate backend
         if is_table or self.is_table_mode:
             # Use table backend
@@ -243,7 +258,8 @@ class ConfigurableHybridOCR:
         else:
             # Use text backend for body text
             logger.debug(f"Using {self.text_backend_name} for text recognition")
-            return self.text_ocr.ocr(img, det, rec, mfd_res, tqdm_enable, tqdm_desc, **kwargs)
+            merged_kwargs = {**self.kwargs, **kwargs}
+            return self.text_ocr.ocr(img, det, rec, mfd_res, tqdm_enable, tqdm_desc, **merged_kwargs)
     
     def __call__(self, img, mfd_res=None):
         """
@@ -295,7 +311,7 @@ if __name__ == '__main__':
     
     if len(sys.argv) > 1:
         test_img_path = sys.argv[1]
-        backend = sys.argv[2] if len(sys.argv) > 2 else 'easyocr'
+        backend = sys.argv[2] if len(sys.argv) > 2 else 'lighton'
         
         print(f"Testing ConfigurableHybridOCR with text_backend={backend}")
         
@@ -314,4 +330,4 @@ if __name__ == '__main__':
                 print(f"{i+1}. {text} (confidence: {conf:.3f})")
     else:
         print("Usage: python configurable_hybrid_ocr.py <image_path> [text_backend]")
-        print("text_backend options: paddle, easyocr, vision, lighton (default: easyocr)")
+        print("text_backend options: paddle, vision, lighton (default: lighton)")

@@ -58,4 +58,8 @@ _build/
 
 
 output/
-output_llm_suyra/
+output_*/
+
+scratch/
+patch_ocr.py
+scratch/

@@ -8,103 +8,13 @@ import cv2
 import numpy as np
 from loguru import logger
 
-from mineru.utils.boxbase import calculate_overlap_area_in_bbox1_area_ratio, calculate_iou, \
-    get_minbox_if_overlap_by_ratio
+from mineru.utils.boxbase import calculate_overlap_area_in_bbox1_area_ratio
 from mineru.utils.enum_class import BlockType, ContentType
 from mineru.utils.pdf_image_tools import get_crop_img
-from mineru.utils.pdf_text_tool import get_page
+from mineru.utils.pdf_text_tool import get_lines_from_chars, get_page_chars
+from mineru.utils.pdfium_guard import pdfium_guard
 
-
-def remove_outside_spans(spans, all_bboxes, all_discarded_blocks):
-    def get_block_bboxes(blocks, block_type_list):
-        return [block[0:4] for block in blocks if block[7] in block_type_list]
-
-    image_bboxes = get_block_bboxes(all_bboxes, [BlockType.IMAGE_BODY])
-    table_bboxes = get_block_bboxes(all_bboxes, [BlockType.TABLE_BODY])
-    other_block_type = []
-    for block_type in BlockType.__dict__.values():
-        if not isinstance(block_type, str):
-            continue
-        if block_type not in [BlockType.IMAGE_BODY, BlockType.TABLE_BODY]:
-            other_block_type.append(block_type)
-    other_block_bboxes = get_block_bboxes(all_bboxes, other_block_type)
-    discarded_block_bboxes = get_block_bboxes(all_discarded_blocks, [BlockType.DISCARDED])
-
-    new_spans = []
-
-    for span in spans:
-        span_bbox = span['bbox']
-        span_type = span['type']
-
-        if any(calculate_overlap_area_in_bbox1_area_ratio(span_bbox, block_bbox) > 0.4 for block_bbox in
-               discarded_block_bboxes):
-            new_spans.append(span)
-            continue
-
-        if span_type == ContentType.IMAGE:
-            if any(calculate_overlap_area_in_bbox1_area_ratio(span_bbox, block_bbox) > 0.5 for block_bbox in
-                   image_bboxes):
-                new_spans.append(span)
-        elif span_type == ContentType.TABLE:
-            if any(calculate_overlap_area_in_bbox1_area_ratio(span_bbox, block_bbox) > 0.5 for block_bbox in
-                   table_bboxes):
-                new_spans.append(span)
-        else:
-            if any(calculate_overlap_area_in_bbox1_area_ratio(span_bbox, block_bbox) > 0.5 for block_bbox in
-                   other_block_bboxes):
-                new_spans.append(span)
-
-    return new_spans
-
-
-def remove_overlaps_low_confidence_spans(spans):
-    dropped_spans = []
-    #  删除重叠spans中置信度低的的那些
-    for span1 in spans:
-        for span2 in spans:
-            if span1 != span2:
-                # span1 或 span2 任何一个都不应该在 dropped_spans 中
-                if span1 in dropped_spans or span2 in dropped_spans:
-                    continue
-                else:
-                    if calculate_iou(span1['bbox'], span2['bbox']) > 0.9:
-                        if span1['score'] < span2['score']:
-                            span_need_remove = span1
-                        else:
-                            span_need_remove = span2
-                        if (
-                            span_need_remove is not None
-                            and span_need_remove not in dropped_spans
-                        ):
-                            dropped_spans.append(span_need_remove)
-
-    if len(dropped_spans) > 0:
-        for span_need_remove in dropped_spans:
-            spans.remove(span_need_remove)
-
-    return spans, dropped_spans
-
-
-def remove_overlaps_min_spans(spans):
-    dropped_spans = []
-    #  删除重叠spans中较小的那些
-    for span1 in spans:
-        for span2 in spans:
-            if span1 != span2:
-                # span1 或 span2 任何一个都不应该在 dropped_spans 中
-                if span1 in dropped_spans or span2 in dropped_spans:
-                    continue
-                else:
-                    overlap_box = get_minbox_if_overlap_by_ratio(span1['bbox'], span2['bbox'], 0.65)
-                    if overlap_box is not None:
-                        span_need_remove = next((span for span in spans if span['bbox'] == overlap_box), None)
-                        if span_need_remove is not None and span_need_remove not in dropped_spans:
-                            dropped_spans.append(span_need_remove)
-    if len(dropped_spans) > 0:
-        for span_need_remove in dropped_spans:
-            spans.remove(span_need_remove)
-
-    return spans, dropped_spans
+MAX_NATIVE_TEXT_CHARS_PER_PAGE = 65535
 
 
 def __replace_ligatures(text: str):
@@ -122,21 +32,34 @@ def __replace_unicode(text: str):
 
 """pdf_text dict方案 char级别"""
 def txt_spans_extract(pdf_page, spans, pil_img, scale, all_bboxes, all_discarded_blocks):
+    page_char_count = None
+    textpage = None
+    try:
+        with pdfium_guard():
+            textpage = pdf_page.get_textpage()
+            page_char_count = textpage.count_chars()
+    except Exception as exc:
+        logger.debug(f"Failed to get page char count before txt extraction: {exc}")
 
-    page_dict = get_page(pdf_page)
+    if page_char_count is not None and page_char_count > MAX_NATIVE_TEXT_CHARS_PER_PAGE:
+        logger.info(
+            "Fallback to post-OCR in txt_spans_extract due to high char count: "
+            f"count_chars={page_char_count}"
+        )
+        need_ocr_spans = [
+            span for span in spans if span.get('type') == ContentType.TEXT
+        ]
+        return _prepare_post_ocr_spans(need_ocr_spans, spans, pil_img, scale)
 
-    page_all_chars = []
-    page_all_lines = []
-    for block in page_dict['blocks']:
-        for line in block['lines']:
-            rotation_degrees = math.degrees(line['rotation'])
-            # 旋转角度不为0, 90, 180, 270的行，直接跳过（rotation_degrees的值可能不为整数）
-            if not any(abs(rotation_degrees - angle) < 0.1 for angle in [0, 90, 180, 270]):
-                continue
-            page_all_lines.append(line)
-            for span in line['spans']:
-                for char in span['chars']:
-                    page_all_chars.append(char)
+    page_chars = get_page_chars(
+        pdf_page,
+        textpage=textpage,
+        page_char_count=page_char_count,
+    )
+    page_all_chars = [
+        char for char in page_chars['chars']
+        if _is_supported_rotation(char['rotation'])
+    ]
 
     # 计算所有sapn的高度的中位数
     span_height_list = []
@@ -171,6 +94,10 @@ def txt_spans_extract(pdf_page, spans, pil_img, scale, all_bboxes, all_discarded
 
     """垂直的span框直接用line进行填充"""
     if len(vertical_spans) > 0:
+        page_all_lines = [
+            line for line in get_lines_from_chars(page_chars['chars'])
+            if _is_supported_rotation(line['rotation'])
+        ]
         for pdfium_line in page_all_lines:
             for span in vertical_spans:
                 if calculate_overlap_area_in_bbox1_area_ratio(pdfium_line['bbox'].bbox, span['bbox']) > 0.5:
@@ -192,46 +119,146 @@ def txt_spans_extract(pdf_page, spans, pil_img, scale, all_bboxes, all_discarded
 
     need_ocr_spans = fill_char_in_spans(new_spans, page_all_chars, median_span_height)
 
-    """对未填充的span进行ocr"""
-    if len(need_ocr_spans) > 0:
+    return _prepare_post_ocr_spans(need_ocr_spans, spans, pil_img, scale)
 
-        for span in need_ocr_spans:
-            # 对span的bbox截图再ocr
-            span_pil_img = get_crop_img(span['bbox'], pil_img, scale)
-            span_img = cv2.cvtColor(np.array(span_pil_img), cv2.COLOR_RGB2BGR)
-            # 计算span的对比度，低于0.20的span不进行ocr
-            if calculate_contrast(span_img, img_mode='bgr') <= 0.17:
+
+def _is_supported_rotation(rotation) -> bool:
+    """判断 pdftext 旋转角是否属于当前可回填的四个标准方向。"""
+    rotation_degrees = math.degrees(rotation)
+    return any(abs(rotation_degrees - angle) < 0.1 for angle in [0, 90, 180, 270])
+
+
+def _prepare_post_ocr_spans(need_ocr_spans, spans, pil_img, scale):
+    if len(need_ocr_spans) == 0:
+        return spans
+
+    for span in need_ocr_spans:
+        # 对span的bbox截图再ocr
+        span_pil_img = get_crop_img(span['bbox'], pil_img, scale)
+        span_img = cv2.cvtColor(np.array(span_pil_img), cv2.COLOR_RGB2BGR)
+        # 计算span的对比度，低于0.17的span不进行ocr，等于0.17的临界框保留给后置OCR。
+        if calculate_contrast(span_img, img_mode='bgr') < 0.17:
+            if span in spans:
                 spans.remove(span)
-                continue
+            continue
 
-            span['content'] = ''
-            span['score'] = 1.0
-            span['np_img'] = span_img
+        span['content'] = ''
+        span['score'] = 1.0
+        span['np_img'] = span_img
 
     return spans
+
+
+class SpanBlockMatcher:
+    """按 block 顺序消费 span，并用 y 方向索引减少无效重叠计算。"""
+
+    def __init__(self, spans):
+        self.spans = list(spans)
+        self.used_span_indices = set()
+        self.grid_size = self._get_grid_size(self.spans)
+        self.grid = self._build_grid(self.spans)
+
+    @staticmethod
+    def _get_grid_size(spans):
+        """根据 span 高度估算索引网格大小，避免过细或过粗。"""
+        heights = [
+            span['bbox'][3] - span['bbox'][1]
+            for span in spans
+            if span.get('bbox') and span['bbox'][3] > span['bbox'][1]
+        ]
+        if not heights:
+            return 1
+        return max(1, statistics.median(heights))
+
+    def _build_grid(self, spans):
+        """将 span 按 y 方向网格登记，后续按 block bbox 快速取候选。"""
+        grid = collections.defaultdict(list)
+        for index, span in enumerate(spans):
+            bbox = span.get('bbox')
+            if not bbox:
+                continue
+            start_cell, end_cell = self._cell_range(bbox)
+            for cell_idx in range(start_cell, end_cell + 1):
+                grid[cell_idx].append(index)
+        return grid
+
+    def _cell_range(self, bbox):
+        """计算 bbox 覆盖的 y 方向网格范围。"""
+        return (
+            int(bbox[1] / self.grid_size),
+            int(bbox[3] / self.grid_size),
+        )
+
+    def _candidate_indices_for_block(self, block_bbox):
+        """取出与 block 纵向范围可能相交的 span 原始索引。"""
+        start_cell, end_cell = self._cell_range(block_bbox)
+        candidate_indices = set()
+        for cell_idx in range(start_cell, end_cell + 1):
+            candidate_indices.update(self.grid.get(cell_idx, []))
+        return sorted(candidate_indices)
+
+    def collect_for_block(self, block_bbox, overlap_ratio_getter=None, threshold=0.5):
+        """返回当前 block 命中的 span，并标记为已消费以保持旧归属语义。"""
+        if overlap_ratio_getter is None:
+            overlap_ratio_getter = self._default_overlap_ratio
+
+        block_spans = []
+        for span_idx in self._candidate_indices_for_block(block_bbox):
+            if span_idx in self.used_span_indices:
+                continue
+            span = self.spans[span_idx]
+            if overlap_ratio_getter(span, block_bbox) > threshold:
+                block_spans.append(span)
+                self.used_span_indices.add(span_idx)
+        return block_spans
+
+    def remaining_spans(self):
+        """返回尚未归属到任何 block 的 span，方便保持后续兼容。"""
+        return [
+            span
+            for index, span in enumerate(self.spans)
+            if index not in self.used_span_indices
+        ]
+
+    @staticmethod
+    def _default_overlap_ratio(span, block_bbox):
+        """默认沿用旧逻辑：计算 span 面积中落入 block 的比例。"""
+        return calculate_overlap_area_in_bbox1_area_ratio(span['bbox'], block_bbox)
 
 
 def fill_char_in_spans(spans, all_chars, median_span_height):
     # 简单从上到下排一下序
     spans = sorted(spans, key=lambda x: x['bbox'][1])
 
-    grid_size = median_span_height
+    grid_size = max(1, median_span_height)
     grid = collections.defaultdict(list)
+    span_bboxes = []
     for i, span in enumerate(spans):
-        start_cell = int(span['bbox'][1] / grid_size)
-        end_cell = int(span['bbox'][3] / grid_size)
+        span_bbox = span['bbox']
+        span_bboxes.append(span_bbox)
+        start_cell = int(span_bbox[1] / grid_size)
+        end_cell = int(span_bbox[3] / grid_size)
         for cell_idx in range(start_cell, end_cell + 1):
             grid[cell_idx].append(i)
 
     for char in all_chars:
-        char_center_y = (char['bbox'][1] + char['bbox'][3]) / 2
+        char_bbox = char['bbox']
+        char_center_x = (char_bbox[0] + char_bbox[2]) / 2
+        char_center_y = (char_bbox[1] + char_bbox[3]) / 2
         cell_idx = int(char_center_y / grid_size)
 
         candidate_span_indices = grid.get(cell_idx, [])
 
         for span_idx in candidate_span_indices:
             span = spans[span_idx]
-            if calculate_char_in_span(char['bbox'], span['bbox'], char['char']):
+            span_bbox = span_bboxes[span_idx]
+            if (
+                char['char'] not in LINE_STOP_FLAG
+                and char['char'] not in LINE_START_FLAG
+                and not span_bbox[0] < char_center_x < span_bbox[2]
+            ):
+                continue
+            if calculate_char_in_span(char_bbox, span_bbox, char['char']):
                 span['chars'].append(char)
                 break
 
@@ -249,8 +276,8 @@ def fill_char_in_spans(spans, all_chars, median_span_height):
 LINE_STOP_FLAG = ('.', '!', '?', '。', '！', '？', ')', '）', '"', '”', ':', '：', ';', '；', ']', '】', '}', '}', '>', '》', '、', ',', '，', '-', '—', '–',)
 LINE_START_FLAG = ('(', '（', '"', '“', '【', '{', '《', '<', '「', '『', '【', '[',)
 
-Span_Height_Radio = 0.33  # 字符的中轴和span的中轴高度差不能超过1/3span高度
-def calculate_char_in_span(char_bbox, span_bbox, char, span_height_radio=Span_Height_Radio):
+Span_Height_Ratio = 0.33  # 字符的中轴和span的中轴高度差不能超过1/3span高度
+def calculate_char_in_span(char_bbox, span_bbox, char, span_height_ratio=Span_Height_Ratio):
     char_center_x = (char_bbox[0] + char_bbox[2]) / 2
     char_center_y = (char_bbox[1] + char_bbox[3]) / 2
     span_center_y = (span_bbox[1] + span_bbox[3]) / 2
@@ -259,7 +286,7 @@ def calculate_char_in_span(char_bbox, span_bbox, char, span_height_radio=Span_He
     if (
         span_bbox[0] < char_center_x < span_bbox[2]
         and span_bbox[1] < char_center_y < span_bbox[3]
-        and abs(char_center_y - span_center_y) < span_height * span_height_radio  # 字符的中轴和span的中轴高度差不能超过Span_Height_Radio
+        and abs(char_center_y - span_center_y) < span_height * span_height_ratio  # 字符的中轴和span的中轴高度差不能超过Span_Height_Ratio
     ):
         return True
     else:
@@ -270,7 +297,7 @@ def calculate_char_in_span(char_bbox, span_bbox, char, span_height_radio=Span_He
                 (span_bbox[2] - span_height) < char_bbox[0] < span_bbox[2]
                 and char_center_x > span_bbox[0]
                 and span_bbox[1] < char_center_y < span_bbox[3]
-                and abs(char_center_y - span_center_y) < span_height * span_height_radio
+                and abs(char_center_y - span_center_y) < span_height * span_height_ratio
             ):
                 return True
         elif char in LINE_START_FLAG:
@@ -278,7 +305,7 @@ def calculate_char_in_span(char_bbox, span_bbox, char, span_height_radio=Span_He
                 span_bbox[0] < char_bbox[2] < (span_bbox[0] + span_height)
                 and char_center_x < span_bbox[2]
                 and span_bbox[1] < char_center_y < span_bbox[3]
-                and abs(char_center_y - span_center_y) < span_height * span_height_radio
+                and abs(char_center_y - span_center_y) < span_height * span_height_ratio
             ):
                 return True
         else:
@@ -287,30 +314,38 @@ def calculate_char_in_span(char_bbox, span_bbox, char, span_height_radio=Span_He
 
 def chars_to_content(span):
     # 检查span中的char是否为空
-    if len(span['chars']) == 0:
-        pass
-    else:
-        # 给chars按char_idx排序
-        span['chars'] = sorted(span['chars'], key=lambda x: x['char_idx'])
+    if len(span['chars']) != 0:
+        chars = span['chars']
+        # 大多数情况下 char 已按 PDF 原始顺序进入，只有乱序时才排序。
+        if any(
+            chars[idx]['char_idx'] > chars[idx + 1]['char_idx']
+            for idx in range(len(chars) - 1)
+        ):
+            chars = sorted(chars, key=lambda x: x['char_idx'])
 
         # Calculate the width of each character
-        char_widths = [char['bbox'][2] - char['bbox'][0] for char in span['chars']]
+        char_widths = [char['bbox'][2] - char['bbox'][0] for char in chars]
         # Calculate the median width
         median_width = statistics.median(char_widths)
 
-        content = ''
-        for char in span['chars']:
+        parts = []
+        for idx, char1 in enumerate(chars):
+            char2 = chars[idx + 1] if idx + 1 < len(chars) else None
 
             # 如果下一个char的x0和上一个char的x1距离超过0.25个字符宽度，则需要在中间插入一个空格
-            char1 = char
-            char2 = span['chars'][span['chars'].index(char) + 1] if span['chars'].index(char) + 1 < len(span['chars']) else None
-            if char2 and char2['bbox'][0] - char1['bbox'][2] > median_width * 0.25 and char['char'] != ' ' and char2['char'] != ' ':
-                content += f"{char['char']} "
+            if (
+                char2
+                and char2['bbox'][0] - char1['bbox'][2] > median_width * 0.25
+                and char1['char'] != ' '
+                and char2['char'] != ' '
+            ):
+                parts.append(char1['char'])
+                parts.append(' ')
             else:
-                content += char['char']
+                parts.append(char1['char'])
 
+        content = ''.join(parts)
         content = __replace_unicode(content)
-        content = __replace_ligatures(content)
         content = __replace_ligatures(content)
         span['content'] = content.strip()
 

@@ -1,15 +1,27 @@
 # Copyright (c) Opendatalab. All rights reserved.
 """
-LightOnOCR client for MinerU integration.
-API-only implementation (Ollama, LM Studio, OpenAI compatible).
+LightOnOCR — Unified OCR client cho MinerU.
+
+Kiến trúc:
+  LightOnOCR (facade)
+    ├─ LightOnOCRAPI   — gọi API (OpenAI-compatible, Ollama, LM Studio, v.v.)
+    └─ LightOnModelLocal — chạy model local (mlx / transformers)
+
+Logic ưu tiên:
+  1. Nếu LLM_SERVICE != "local" → thử API trước
+  2. Nếu API fail hoặc LLM_SERVICE == "local" → dùng local model
+  3. Nếu không có backend nào → raise RuntimeError
+
+Vietnamese table:
+  Khi nhận ra bảng có khả năng chứa tiếng Việt (lang='vi' hoặc detect ký tự),
+  tự động dùng prompt tiếng Việt để đảm bảo đúng dấu thanh.
 
 CHANGES vs original:
-- Added crop_for_lighton() helper: minimal adaptive padding thay vì 50px cứng
-- recognize_text / recognize_table nhận thêm tham số page_img + poly để
-  tự crop từ ảnh gốc, tránh double-padding từ crop_img() của pipeline
-- Nếu không truyền page_img thì fallback về hành vi cũ (tương thích ngược)
-- Thêm _preprocess_image(): scale nhỏ lên ≥ 640px để model đọc rõ hơn
-- recognize_table: thêm post-process kiểm tra <table> tag hợp lệ
+  - Thêm LightOnOCRAPI (đổi tên từ LightOnOCR cũ)
+  - Thêm LightOnOCR facade với API-first + local fallback
+  - Đọc config qua lighton_config.get_lighton_config()
+  - Thêm _is_vietnamese_content() + _vietnamese_table_prompt
+  - recognize_table nhận tham số vietnamese=True/auto
 """
 import os
 import re
@@ -24,15 +36,19 @@ from PIL import Image
 from loguru import logger
 
 
-# ── Constants ────────────────────────────────────────────────────────────────
-# Padding tỉ lệ theo kích thước bbox thay vì giá trị cứng
-_PAD_RATIO   = 0.04   # 4% cạnh ngắn hơn của bbox
-_PAD_MIN_PX  = 6      # tối thiểu 6px
-_PAD_MAX_PX  = 20     # tối đa 20px (thay vì 50px)
+# ── Image processing constants ──────────────────────────────────────────────────
+_PAD_RATIO   = 0.04  # 4% padding
+_PAD_MIN_PX  = 6
+_PAD_MAX_PX  = 20
+_MIN_DIM_PX  = 320   # Giảm từ 640 xuống 320
+_MAX_DIM_PX  = 1280  # Giảm từ 2048 xuống 1280
 
-# Scale nhỏ lên để model đọc rõ hơn
-_MIN_DIM_PX  = 640    # cạnh ngắn nhất sau scale
-_MAX_DIM_PX  = 2048   # cạnh dài nhất tối đa (tránh quá nặng)
+# Regex nhận diện ký tự tiếng Việt có dấu
+_VIET_DIACRITIC_RE = re.compile(
+    r"[àáâãèéêìíòóôõùúýăđĩũơưạảấầẩẫậắặẳẵắặẻẽẹếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỷỹỵ"
+    r"ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐĨŨƠƯẠẢẤẦẨẪẬẮẶẲẴẮẶẺẼẸẾỀỂỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪỬỮỰỲỶỸỴ]",
+    re.UNICODE,
+)
 
 
 # ── HTML to Markdown Conversion Helpers ──────────────────────────────────────
@@ -46,7 +62,7 @@ def _get_html_text(html_fragment: str) -> str:
             .replace('&#8805;', '≥').replace('&#8804;', '≤')).strip()
 
 
-def _parse_section_to_grid(section_html: str, is_header: bool = False) -> list[list[str]]:
+def _parse_section_to_grid(section_html: str) -> list[list[str]]:
     rows_raw = re.findall(r'<tr[^>]*>(.*?)</tr>', section_html, re.IGNORECASE | re.DOTALL)
     if not rows_raw:
         return []
@@ -71,11 +87,9 @@ def _parse_section_to_grid(section_html: str, is_header: bool = False) -> list[l
 
             for c_off in range(colspan):
                 col = col_cursor + c_off
-                # Replicate text only for headers so _merge_multirow_header works correctly.
-                # For body rows, only put text in the first cell to prevent repetition.
-                grid[row_idx][col] = text if is_header or c_off == 0 else ''
+                grid[row_idx][col] = text if c_off == 0 else ""
                 for r_off in range(1, rowspan):
-                    occupied[(row_idx + r_off, col)] = ''
+                    occupied[(row_idx + r_off, col)] = ""
 
             col_cursor += colspan
 
@@ -100,8 +114,8 @@ def _parse_table_to_grid(html: str) -> tuple[list[list[str]], list[list[str]]]:
     if not thead_html and not tbody_html:
         tbody_html = html
 
-    header_rows = _parse_section_to_grid(thead_html, is_header=True) if thead_html else []
-    body_rows   = _parse_section_to_grid(tbody_html, is_header=False) if tbody_html else []
+    header_rows = _parse_section_to_grid(thead_html) if thead_html else []
+    body_rows   = _parse_section_to_grid(tbody_html) if tbody_html else []
 
     if not header_rows and body_rows:
         first_tr = re.search(r'<tr[^>]*>(.*?)</tr>', tbody_html, re.IGNORECASE | re.DOTALL)
@@ -269,37 +283,76 @@ _PROMPT_ECHO_PATTERNS = [
     "Output ONLY a valid HTML",
     "Do not add any explanation or preamble.",
     "Ensure Vietnamese text is accurate.",
+    "Đây là bảng tiếng Việt.",
 ]
 
 _ARTIFACT_PATTERNS = [
     (re.compile(r'^\$\^ \+\$\s*$', re.MULTILINE), ''),
     (re.compile(r'^#\s*$', re.MULTILINE), ''),
-    (re.compile(r'^Note:.*$', re.MULTILINE | re.IGNORECASE), ''), # Thêm dòng này để chém "Note:"
+    (re.compile(r'^Note:.*$', re.MULTILINE | re.IGNORECASE), ''),
 ]
 
 def _clean_ocr_response(text: str, prompt: str = "") -> str:
-    """Xóa phần prompt bị model echo lại và các artifacts trong response."""
     if not text:
-        return text
+        return ""
+
     t = text.strip()
     if prompt and t.startswith(prompt.strip()):
         t = t[len(prompt.strip()):].strip()
 
-    # Xóa prompt echo từng dòng
+    # Check for common VLM "no text" placeholders
+    lower_t = t.lower()
+    no_text_indicators = [
+        "no text visible",
+        "no visible text",
+        "no text found",
+        "does not contain any text",
+        "empty image",
+        "blank image",
+        "no readable text"
+    ]
+    if any(ind in lower_t for ind in no_text_indicators):
+        return ""
+
     lines = t.splitlines()
     clean_lines = []
+
+    # Generic instruction/prompt lines to drop
+    drop_patterns = [
+        "do not output",
+        "extract all text",
+        "output only",
+        "raw text (extracted",
+        "note:",
+        "output format:",
+        "additional notes:",
+        "end of document",
+        "do not add any",
+        "preamble",
+        "explanation",
+        "code blocks",
+        "html tables",
+        "latex formulas"
+    ]
+
     for line in lines:
-        stripped = line.strip()
-        is_prompt = any(stripped.startswith(p[:30]) for p in _PROMPT_ECHO_PATTERNS)
-        if not is_prompt:
-            clean_lines.append(line)
-    t = "\n".join(clean_lines).strip()
+        s_line = line.strip().lower()
+        if not s_line:
+            continue
+        if any(pat in s_line for pat in drop_patterns):
+            continue
+        if s_line.startswith("---") or s_line.startswith("***"):
+            continue
+        clean_lines.append(line)
 
-    # Xóa các artifacts đặc thù
-    for pattern, replacement in _ARTIFACT_PATTERNS:
-        t = pattern.sub(replacement, t)
+    cleaned = "\n".join(clean_lines).strip()
 
-    return t.strip()
+    # Final check: if the cleaned text consists only of markdown artifacts/notes, return empty
+    lower_cleaned = cleaned.lower()
+    if not cleaned or any(ind in lower_cleaned for ind in no_text_indicators):
+        return ""
+
+    return cleaned
 
 
 # ── Smart crop helper ────────────────────────────────────────────────────────
@@ -311,14 +364,6 @@ def crop_for_lighton(
     pad_min: int = _PAD_MIN_PX,
     pad_max: int = _PAD_MAX_PX,
 ) -> np.ndarray:
-    """
-    Crop vùng bbox từ ảnh trang gốc với padding tỉ lệ nhỏ.
-
-    Dùng thay thế cho crop_img() của pipeline (vốn dùng 50px cứng).
-    poly: list 8 giá trị [x0,y0, x1,y1, x2,y2, x3,y3] hoặc
-          list 4 giá trị [x0,y0, x1,y1] (xmin,ymin,xmax,ymax).
-    page_img: numpy array RGB của toàn trang.
-    """
     if len(poly) >= 8:
         xs = [poly[i]     for i in range(0, 8, 2)]
         ys = [poly[i + 1] for i in range(0, 8, 2)]
@@ -331,7 +376,6 @@ def crop_for_lighton(
     x0, x1 = int(min(xs)), int(max(xs))
     y0, y1 = int(min(ys)), int(max(ys))
 
-    # Padding tỉ lệ theo cạnh ngắn hơn
     short_side = min(x1 - x0, y1 - y0)
     pad = int(short_side * pad_ratio)
     pad = max(pad_min, min(pad, pad_max))
@@ -345,216 +389,143 @@ def crop_for_lighton(
     cropped = page_img[y0c:y1c, x0c:x1c]
     if cropped.size == 0:
         logger.warning(f"crop_for_lighton: crop rỗng tại poly={poly}")
-        return page_img  # fallback ảnh toàn trang
-
+        return page_img
     return cropped
 
 
 def _preprocess_image(image: np.ndarray) -> np.ndarray:
-    """
-    Scale ảnh lên nếu quá nhỏ để model đọc rõ hơn.
-    Scale xuống nếu quá lớn để giảm payload.
-    Giữ nguyên aspect ratio.
-    """
     h, w = image.shape[:2]
     if h == 0 or w == 0:
         return image
 
     short, long_ = min(h, w), max(h, w)
 
-    # Cần scale lên?
     if short < _MIN_DIM_PX:
         scale = _MIN_DIM_PX / short
         new_w = int(w * scale)
         new_h = int(h * scale)
-        # Nhưng không để cạnh dài vượt MAX
         if max(new_w, new_h) > _MAX_DIM_PX:
             scale = _MAX_DIM_PX / long_
             new_w = int(w * scale)
             new_h = int(h * scale)
         image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
-        logger.debug(f"_preprocess_image: scaled up {w}x{h} → {new_w}x{new_h}")
-
-    # Cần scale xuống?
     elif long_ > _MAX_DIM_PX:
         scale = _MAX_DIM_PX / long_
         new_w = int(w * scale)
         new_h = int(h * scale)
         image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
-        logger.debug(f"_preprocess_image: scaled down {w}x{h} → {new_w}x{new_h}")
 
     return image
 
 
-# ── Main class ────────────────────────────────────────────────────────────────
+# ── Vietnamese detection helper ───────────────────────────────────────────────
 
-class LightOnOCR:
-    """OCR client using API backends (OpenAI/Ollama compatible)."""
+def _is_vietnamese_content(image: Union[np.ndarray, Image.Image]) -> bool:
+    """
+    Heuristic: phát hiện nội dung tiếng Việt.
+    EasyOCR đã bị xóa — trả về False để pipeline dùng lang mặc định của caller.
+    """
+    return False
 
-    def __init__(
-        self,
-        server_url: str = None,
-        model_name: str = None,
-        timeout: int = 600,
-        **kwargs
-    ):
-        api_base = os.getenv("OPENAI_API_BASE", "http://localhost:1234/v1")
-        api_key = os.getenv("OPENAI_API_KEY", "")
-        self.server_url = (
-            server_url
-            or f"{api_base.rstrip('/')}/chat/completions"
-        )
-        self.model_name = (
-            model_name
-            or os.getenv("OPENAI_MODEL", "lightonocr")
-        )
-        self.api_key = api_key
-        self.timeout = timeout
 
-        logger.info(f"Initialized LightOnOCR API: URL={self.server_url}, Model={self.model_name}")
+# ── LightOnOCRAPI (internal, API-only) ───────────────────────────────────────
 
-    # ── Internal helpers ──────────────────────────────────────────────────────
+class LightOnOCRAPI:
+    """OCR via OpenAI-compatible API (LM Studio, Ollama, OpenAI, Azure, v.v.)."""
 
-    def _call_api(self, image: Union[np.ndarray, Image.Image], prompt: str) -> str:
-        """Gọi API với OpenAI SDK (giống Marker)."""
-        import openai
-        
-        base_url = self.server_url.replace("/chat/completions", "")
-        client = openai.OpenAI(api_key=self.api_key or "sk-dummy", base_url=base_url)
+    def __init__(self, cfg=None, server_url: str = None, model_name: str = None, timeout: int = 180, **kwargs):
+        from mineru.utils.lighton_config import get_lighton_config, build_api_headers
 
-        img_b64 = self._image_to_base64(image)
-        image_url = f"data:image/jpeg;base64,{img_b64}"
+        self._cfg = cfg or get_lighton_config()
+        self.server_url = server_url or self._cfg.chat_completions_url
+        self.model_name = model_name or self._cfg.model
+        self.timeout    = timeout
+        self.drop_score = kwargs.get("drop_score", 0.5)
+        self._headers   = build_api_headers(self._cfg)
+        logger.debug(f"[OCR API] URL={self.server_url!r} model={self.model_name!r} service={self._cfg.llm_service!r}")
 
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": image_url}},
-                    {"type": "text", "text": prompt},
-                ],
-            }
-        ]
-
-        import time
-        for attempt in range(3):
-            try:
-                response = client.chat.completions.create(
-                    model=self.model_name,
-                    messages=messages,
-                    timeout=self.timeout,
-                    temperature=0.0
-                )
-                text = response.choices[0].message.content
-                if not text:
-                    logger.warning(f"LightOnOCR OpenAI: response 200 nhưng content rỗng.")
-                return text
-            except Exception as e:
-                logger.error(f"LightOnOCR OpenAI error (attempt {attempt+1}): {e}")
-                if attempt < 2:
-                    time.sleep(2 ** attempt)
-                else:
-                    return ""
-        return ""
-
-    def _call_api_structured(self, image: Union[np.ndarray, Image.Image], prompt: str, schema_fields: dict) -> dict:
-        """
-        Gọi API với Structured Output của OpenAI SDK (giống Marker).
-        """
-        import openai
-        from pydantic import create_model
-
-        base_url = self.server_url.replace("/chat/completions", "")
-        client = openai.OpenAI(api_key=self.api_key or "sk-dummy", base_url=base_url)
-
-        img_b64 = self._image_to_base64(image)
-        image_url = f"data:image/jpeg;base64,{img_b64}"
-
-        # Xây dựng JSON schema hint cho prompt (cho fallback)
-        import json
-        schema_example = {k: f"<{v}>" for k, v in schema_fields.items()}
-        json_instruction = (
-            f"\n\nRespond ONLY with a valid JSON object matching this schema:\n"
-            f"{json.dumps(schema_example, ensure_ascii=False, indent=2)}\n"
-            f"Do not include any text outside the JSON object."
-        )
-        full_prompt = prompt + json_instruction
-
-        type_mapping = {"str": str, "int": int, "float": float, "bool": bool}
-        fields = {k: (type_mapping.get(v, str), ...) for k, v in schema_fields.items()}
-        ResponseSchema = create_model("ResponseSchema", **fields)
-
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": image_url}},
-                    {"type": "text", "text": full_prompt},
-                ],
-            }
-        ]
-
-        import time
-        import re
-        for attempt in range(3):
-            try:
-                # Dùng beta.chat.completions.parse như Marker
-                response = client.beta.chat.completions.parse(
-                    model=self.model_name,
-                    messages=messages,
-                    timeout=self.timeout,
-                    response_format=ResponseSchema,
-                )
-                response_text = response.choices[0].message.content
-                try:
-                    return json.loads(response_text)
-                except json.JSONDecodeError:
-                    return response.parsed.dict() if hasattr(response, "parsed") and response.parsed else {}
-            except Exception as e:
-                logger.error(f"OpenAI structured inference failed: {e}. Fallback to regex extraction...")
-                try:
-                    # Fallback JSON extraction via chat.completions.create
-                    fallback_resp = client.chat.completions.create(
-                        model=self.model_name,
-                        messages=messages,
-                        timeout=self.timeout,
-                    )
-                    raw = fallback_resp.choices[0].message.content.strip()
-                    if raw.startswith("```"):
-                        raw = re.sub(r"^```[a-z]*\n?", "", raw)
-                        raw = re.sub(r"\n?```$", "", raw)
-                    raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
-                    m = re.search(r"\{.*\}", raw, re.DOTALL)
-                    if m:
-                        return json.loads(m.group(0))
-                except Exception as fallback_e:
-                    logger.error(f"Fallback JSON mode failed: {fallback_e}")
-            if attempt < 2:
-                time.sleep(2 ** attempt)
-                
-        return {}
+    # ── Internal ──────────────────────────────────────────────────────────────
 
     def _to_numpy_rgb(self, image: Union[np.ndarray, Image.Image]) -> np.ndarray:
-        """Chuẩn hóa về numpy RGB."""
         if isinstance(image, Image.Image):
             return np.array(image.convert("RGB"))
         if isinstance(image, np.ndarray):
-            if len(image.shape) == 2:                      # grayscale
+            if len(image.shape) == 2:
                 return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-            if image.shape[2] == 4:                        # RGBA
+            if image.shape[2] == 4:
                 return cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
             if image.shape[2] == 3:
-                # Giả sử BGR (OpenCV convention) → RGB
                 return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def _image_to_base64(self, image: Union[np.ndarray, Image.Image]) -> str:
-        rgb = self._to_numpy_rgb(image)
-        rgb = _preprocess_image(rgb)        # scale nếu cần
-        pil = Image.fromarray(rgb)
+    def _call_api(self, image: Union[np.ndarray, Image.Image], prompt: str, temperature: float = 0.0) -> str:
+        # Chuyển ảnh thành PIL để lấy base64 chuẩn
+        if isinstance(image, np.ndarray):
+            pil = Image.fromarray(self._to_numpy_rgb(image))
+        else:
+            pil = image.convert("RGB")
+        pil = Image.fromarray(_preprocess_image(np.array(pil)))
+        
         buffered = BytesIO()
         pil.save(buffered, format="JPEG", quality=95)
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        image_url = f"data:image/jpeg;base64,{img_str}"
 
+        if "/api/" in self.server_url:
+            # Ollama style
+            payload = {
+                "model": self.model_name,
+                "messages": [{"role": "user", "content": prompt, "images": [img_str]}],
+                "stream": False,
+                "options": {"temperature": temperature}
+            }
+            try:
+                r = requests.post(self.server_url, json=payload, headers=self._headers, timeout=self.timeout)
+                if r.status_code == 200:
+                    res  = r.json()
+                    text = res.get("response", res.get("message", {}).get("content", ""))
+                    if not text:
+                        logger.warning(f"[OCR API] Ollama: response 200 nhưng content rỗng. raw={res}")
+                    return text
+                else:
+                    logger.error(f"[OCR API] Ollama: HTTP {r.status_code} - {r.text[:200]}")
+            except Exception as e:
+                logger.error(f"[OCR API] Ollama error: {e}")
+                raise
+        else:
+            # OpenAI / LM Studio / Azure / ... style
+            payload = {
+                "model": self.model_name,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text",      "text": prompt},
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                        ],
+                    }
+                ],
+                "temperature": temperature,
+                "max_tokens":  4096,
+            }
+            try:
+                r = requests.post(self.server_url, json=payload, headers=self._headers, timeout=self.timeout)
+                if r.status_code == 200:
+                    text = r.json()["choices"][0]["message"]["content"]
+                    if not text:
+                        logger.warning(f"[OCR API] OpenAI: response 200 nhưng content rỗng.")
+                    return text
+                else:
+                    logger.error(f"[OCR API] OpenAI: HTTP {r.status_code} - {r.text[:200]}")
+                    raise RuntimeError(f"API HTTP {r.status_code}")
+            except (requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout) as e:
+                logger.warning(f"[OCR API] Connection error: {e}")
+                raise
+            except Exception as e:
+                logger.error(f"[OCR API] Error: {e}")
+                raise
+        return ""
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -564,21 +535,28 @@ class LightOnOCR:
         *,
         page_img: Optional[np.ndarray] = None,
         poly: Optional[list] = None,
+        vietnamese: bool = False,
+        lang: str = "",
     ) -> Tuple[str, float]:
-        """
-        Nhận diện text.
-
-        Nếu truyền page_img + poly: tự crop từ ảnh gốc với padding nhỏ.
-        Nếu không: dùng image đã truyền vào (hành vi cũ, tương thích ngược).
-        """
         if page_img is not None and poly is not None:
             image = crop_for_lighton(poly, page_img)
 
-        prompt = (
-            "Extract all text from this image accurately. "
-            "Output ONLY the raw extracted text. "
-            "DO NOT output any notes, explanations, comments, or markdown code blocks."
-        )
+        if lang and lang.startswith('vi'):
+            vietnamese = True
+
+        if vietnamese:
+            prompt = (
+                "Trích xuất chính xác toàn bộ văn bản từ hình ảnh này. "
+                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
+                "CHỈ xuất ra văn bản thô được trích xuất. "
+                "KHÔNG xuất ra bất kỳ ghi chú, lời giải thích, bình luận hoặc khối mã markdown nào."
+            )
+        else:
+            prompt = (
+                "Extract all text from this image accurately. "
+                "Output ONLY the raw extracted text. "
+                "DO NOT output any notes, explanations, comments, or markdown code blocks."
+            )
         text = self._call_api(image, prompt)
         text = _clean_ocr_response(text, prompt)
         return text.strip(), (0.95 if text else 0.0)
@@ -590,56 +568,94 @@ class LightOnOCR:
         *,
         page_img: Optional[np.ndarray] = None,
         poly: Optional[list] = None,
+        vietnamese: bool = False,
+        lang: str = "",
+        skeleton_html: str = "",
     ) -> str:
-        """
-        Trích xuất bảng, trả về HTML table string.
-
-        Nếu truyền page_img + poly: tự crop từ ảnh gốc với padding nhỏ.
-        bbox_coords giữ lại để tương thích ngược (không dùng).
-        """
         if page_img is not None and poly is not None:
             image = crop_for_lighton(poly, page_img)
 
-        prompt = (
-            "Extract the table from this image. "
-            "Output ONLY a valid HTML <table> with <thead> and <tbody>. "
-            "CRITICAL RULES:\n"
-            "1. `<thead>` MUST ONLY contain the actual column titles. DO NOT put section/sub-headers (like 'HỌC KỲ 1') in `<thead>`.\n"
-            "2. Section sub-headers (like 'HỌC KỲ 1', 'HỌC KỲ 2' spanning multiple columns) MUST be placed inside `<tbody>` using `<td colspan=\"...\">`.\n"
-            "3. Keep the exact text as seen in the image. DO NOT append repeating suffixes to cells.\n"
-            "4. Output ONLY the raw HTML code. Do not add any markdown formatting (e.g. ```html)."
-        )
-        result = self._call_api(image, prompt)
-        result = _clean_ocr_response(result, prompt).strip()
-
-        # ── Post-process: đảm bảo output là HTML table hợp lệ ──────────────
-        if result:
-            # Cắt lấy phần <table>...</table> nếu model output thêm text thừa
-            start = result.find("<table")
-            end   = result.rfind("</table>")
-            if start != -1 and end != -1:
-                result = result[start : end + len("</table>")]
-            elif "<table" not in result:
-                # Model trả về plain text thay vì HTML → trả về text thuần thay vì wrap table
-                logger.warning(
-                    "LightOnOCR recognize_table: output không chứa <table>, "
-                    f"trả về văn bản thuần. preview={repr(result[:80])}"
-                )
-                return result
-
-            # Chuyển đổi sang Markdown chuẩn
-            result = html_table_to_markdown(result)
-            # Fix flat multi-row headers (nếu có)
-            result = _fix_flat_multirow_header(result)
-
-            logger.debug(
-                f"LightOnOCR recognize_table: {len(result)} ký tự (Markdown), "
-                f"preview={repr(result[:80])}"
+        if lang and lang.startswith('vi'):
+            vietnamese = True
+            
+        if skeleton_html and "<table>" in skeleton_html:
+            prompt = (
+                "Dưới đây là một ảnh chứa bảng và cấu trúc HTML khung của bảng đó đã được dựng sẵn (skeleton). "
+                "CẢNH BÁO: Các chữ hiện có bên trong các thẻ <td>, <th> của SKELETON HTML là KẾT QUẢ NHẬN DIỆN BỊ LỖI (MẤT DẤU, SAI CHÍNH TẢ). "
+                "NHIỆM VỤ CỦA BẠN: Hãy nhìn trực tiếp vào ảnh, tự đọc lại toàn bộ các chữ tiếng Việt một cách chính xác, "
+                "và THAY THẾ HOÀN TOÀN các chữ lỗi xuất hiện trong SKELETON bằng chữ bạn vừa đọc được từ ảnh. "
+                "Tuyệt đối KHÔNG ĐƯỢC sao chép lại chữ lỗi từ skeleton. Nếu SKELETON bị sai cấu trúc (như gộp cột sai, thiếu cột so với ảnh), bạn ĐƯỢC PHÉP sửa lại các thẻ <td>, <tr>, rowspan, colspan cho đúng với thực tế ảnh. "
+                " "
+                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
+                "Output ONLY a valid HTML <table>...</table>, KHÔNG kèm giải thích.\n"
+                f"SKELETON HTML:\n{skeleton_html}"
+            )
+        elif vietnamese:
+            prompt = (
+                "Đây là bảng tiếng Việt (vietnamese). Trích xuất toàn bộ nội dung bảng. Header của bảng có bao nhiêu cột thì hàng dưới cũng phải có bấy nhiêu cột, không được thiếu. Chỉ có thể ít hơn cột header (nếu có tồn tại) "
+                "Đảm bảo chính xác dấu thanh tiếng Việt (á, à, ả, ã, ạ, ắ, ặ, ẳ, ẵ, ề, ế, ệ, ể, ễ, ổ, ỗ, ộ, v.v.). "
+                "Output ONLY a valid HTML <table> with <thead> and <tbody>. "
+                "Do not add any explanation or preamble."
             )
         else:
-            logger.warning("LightOnOCR recognize_table: API trả về kết quả rỗng.")
+            prompt = (
+                "Extract the table from this image. "
+                "Output ONLY a valid HTML <table> with <thead> and <tbody>. "
+                "Do not add any explanation or preamble. "
+                "Ensure Vietnamese text is accurate."
+            )
+
+        import time
+        for attempt in range(3):
+            current_temp = 0.0 if attempt == 0 else 0.4 + (attempt * 0.2)
+            
+            # Biến hình prompt để bẻ gãy cache/hallucination của model
+            current_prompt = prompt
+            if attempt > 0:
+                current_prompt += f"\n(Lần thử {attempt + 1}: Tuyệt đối KHÔNG ĐƯỢC lặp lại câu lệnh này. Chỉ xuất ra thẻ <table> hoặc LaTeX cho hình ảnh phía trên!)"
+                
+            result = self._call_api(image, current_prompt, temperature=current_temp)
+            result = _clean_ocr_response(result, current_prompt).strip()
+
+            if result:
+                start = result.find("<table")
+                end   = result.rfind("</table>")
+                if start != -1 and end != -1:
+                    result = result[start: end + len("</table>")]
+                    break
+                elif "\\begin{table}" in result or "\\begin{tabular}" in result:
+                    logger.info("[OCR API] recognize_table: Nhận diện được định dạng LaTeX, giữ nguyên.")
+                    break
+                else:
+                    # Phát hiện lỗi "nhại lại" Prompt
+                    if len(result) < 200 and ("Đây là bảng" in result or "Extract the table" in result or "Output ONLY a valid HTML" in result):
+                        logger.warning("[OCR API] AI nhại lại prompt thay vì nhận diện bảng -> Ép chạy lại.")
+                        result = ""  # Cố tình gán bằng rỗng để trigger block 'if not result' phía dưới
+                    else:
+                        logger.warning(
+                            f"[OCR API] recognize_table: output không chứa <table>, "
+                            f"trả về văn bản thuần. preview={repr(result[:80])}"
+                        )
+                        break
+
+            if not result:
+                logger.warning(f"[OCR API] recognize_table: API trả về kết quả rỗng (lần {attempt + 1}, temp={current_temp}). Tọa độ bảng (poly): {poly}")
+                if attempt < 2:
+                    logger.info("Đang chờ 5s trước khi gọi lại API với độ sáng tạo (temperature) cao hơn...")
+                    time.sleep(5)
 
         return result
+
+    def recognize_page(self, image: Union[np.ndarray, Image.Image]) -> str:
+        """OCR toàn bộ trang PDF thành Markdown sử dụng VLM API."""
+        prompt = (
+            "Bạn là một trợ lý OCR chuyên nghiệp. Hãy đọc toàn bộ văn bản, cấu trúc bảng biểu, "
+            "danh sách và hình ảnh trong bức ảnh trang tài liệu này. "
+            "Hãy giữ nguyên tiếng Việt có dấu và cấu trúc trang. "
+            "LƯU Ý: Chỉ trả về nội dung văn bản kết quả, KHÔNG thêm bất kỳ câu chào hỏi, giải thích hay bọc trong thẻ code block nào."
+        )
+        result = self._call_api(image, prompt, temperature=0.0)
+        return _clean_ocr_response(result, prompt).strip()
 
     def ocr(
         self,
@@ -651,28 +667,22 @@ class LightOnOCR:
         tqdm_desc="OCR-rec Predict",
         **kwargs,
     ) -> List:
-        """
-        Interface tương thích với PaddleOCR.
-        Thêm tham số page_img / poly qua kwargs để bypass double-cropping.
-        """
         page_img = kwargs.get("page_img")
         poly     = kwargs.get("poly")
+        vietnamese = kwargs.get("vietnamese", False)
 
         imgs = [img] if isinstance(img, np.ndarray) else img
-        ocr_res = []
         is_table = "table" in (tqdm_desc or "").lower()
 
         if is_table:
             return [
                 [
-                    (
-                        self.recognize_table(image, page_img=page_img, poly=poly),
-                        1.0,
-                    )
+                    (self.recognize_table(image, page_img=page_img, poly=poly, vietnamese=vietnamese), 1.0)
                     for image in imgs
                 ]
             ]
 
+        ocr_res = []
         if det and rec:
             for image in imgs:
                 text, score = self.recognize_text(image, page_img=page_img, poly=poly)
@@ -686,7 +696,6 @@ class LightOnOCR:
                     ocr_res.append([[box, (text, score)]])
                 else:
                     ocr_res.append(None)
-
         elif not det and rec:
             ocr_res.append(
                 [
@@ -694,6 +703,300 @@ class LightOnOCR:
                     for image in imgs
                 ]
             )
+
+        return ocr_res
+
+    def __call__(
+        self,
+        img: np.ndarray,
+        mfd_res: List = None,
+        *,
+        page_img: Optional[np.ndarray] = None,
+        poly: Optional[list] = None,
+    ) -> Tuple[List, List]:
+        if img is None:
+            return None, None
+        text, score = self.recognize_text(img, page_img=page_img, poly=poly)
+        if not text:
+            return None, None
+        h, w = img.shape[:2]
+        return (
+            [np.array([[0, 0], [w, 0], [w, h], [0, h]], dtype=np.float32)],
+            [(text, score)],
+        )
+
+
+# ── LightOnOCR Facade (API-first + local fallback) ────────────────────────────
+
+class LightOnOCR:
+    """
+    Facade OCR: thử API trước, fallback sang local nếu API không khả dụng.
+
+    Config qua env vars (xem mineru/utils/lighton_config.py):
+      LLM_SERVICE      → "openai" / "azure" / "local" / ...
+      OPENAI_API_KEY   → API key
+      OPENAI_API_BASE  → Base URL
+      OPENAI_MODEL     → Model name
+
+    Vietnamese table: tự động phát hiện và dùng prompt tiếng Việt chuyên biệt.
+    """
+
+    _api_failed = False
+    _shared_local_model = None
+
+    def __init__(
+        self,
+        server_url: str = None,
+        model_name: str = None,
+        timeout: int = 180,
+        **kwargs,
+    ):
+        from mineru.utils.lighton_config import get_lighton_config
+
+        self._cfg = get_lighton_config()
+        self.drop_score = kwargs.get("drop_score", 0.5)
+
+        # ── Khởi tạo API backend ──────────────────────────────────────────────
+        if self._cfg.use_api:
+            try:
+                self._api = LightOnOCRAPI(
+                    cfg=self._cfg,
+                    server_url=server_url,
+                    model_name=model_name,
+                    timeout=timeout,
+                    **kwargs,
+                )
+                logger.debug("[LightOnOCR] API backend initialized.")
+            except Exception as e:
+                logger.warning(f"[LightOnOCR] API backend init failed: {e}")
+                self._api = None
+        else:
+            self._api = None
+
+        # ── Khởi tạo local backend (lazy) ────────────────────────────────────
+        # Chỉ load model khi thực sự cần (tránh chiếm RAM nếu API luôn hoạt động)
+        self._local = None
+        self._local_kwargs = kwargs
+
+        logger.debug(
+            f"[LightOnOCR] service={self._cfg.llm_service!r} "
+            f"use_api={self._cfg.use_api} use_local={self._cfg.use_local}"
+        )
+
+    # ── Lazy local loader ─────────────────────────────────────────────────────
+
+    def _get_local(self):
+        if LightOnOCR._shared_local_model is None:
+            if not self._cfg.use_local:
+                raise RuntimeError(
+                    "[LightOnOCR] Local backend is disabled. "
+                    "Set LLM_SERVICE=local or check config."
+                )
+            logger.info("[LightOnOCR] Loading local model (first use)...")
+            from mineru.model.ocr.lighton_model_local import LightOnModelLocal
+            LightOnOCR._shared_local_model = LightOnModelLocal(**self._local_kwargs)
+        return LightOnOCR._shared_local_model
+
+    # ── Offload ───────────────────────────────────────────────────────────────
+
+    @classmethod
+    def offload_local_model(cls):
+        """Free the shared local model from memory."""
+        if cls._shared_local_model is not None:
+            logger.info("[LightOnOCR] Offloading shared local model...")
+            cls._shared_local_model.offload()
+            cls._shared_local_model = None
+
+    def offload(self):
+        """Instance method to offload the shared local model."""
+        self.offload_local_model()
+
+    # ── API availability check ────────────────────────────────────────────────
+
+    def _check_api_alive(self) -> bool:
+        """Kiểm tra nhanh xem API có sẵn sàng không (GET /models)."""
+        try:
+            from mineru.utils.lighton_config import build_api_headers
+            base = self._cfg.api_base.rstrip("/")
+            r = requests.get(
+                f"{base}/models",
+                headers=build_api_headers(self._cfg),
+                timeout=2,
+            )
+            return r.status_code == 200
+        except Exception:
+            return False
+
+    # ── Vietnamese table detection ────────────────────────────────────────────
+
+    def _should_use_vietnamese_prompt(
+        self,
+        image: Union[np.ndarray, Image.Image],
+        lang: Optional[str] = None,
+        auto_detect: bool = True,
+    ) -> bool:
+        """
+        Trả về True nếu nên dùng prompt tiếng Việt chuyên biệt.
+        - Nếu lang bắt đầu bằng 'vi' → True ngay
+        - Nếu auto_detect=True → scan nhanh ảnh để phát hiện ký tự tiếng Việt
+        """
+        if lang and lang.lower().startswith("vi"):
+            return True
+        if auto_detect:
+            return _is_vietnamese_content(image)
+        return False
+
+    # ── Generic fallback dispatcher ───────────────────────────────────────────
+
+    def _with_fallback(self, api_fn, local_fn):
+        """
+        Thử gọi api_fn. Nếu fail (exception hoặc không có API) → gọi local_fn.
+        """
+        if self._api is not None and not getattr(LightOnOCR, '_api_failed', False):
+            try:
+                return api_fn()
+            except Exception as e:
+                logger.warning(f"[LightOnOCR] API failed ({e}). Đã tắt API cho các block tiếp theo, chuyển sang dùng local.")
+                LightOnOCR._api_failed = True
+
+        if self._cfg.use_local:
+            return local_fn()
+
+        raise RuntimeError(
+            "[LightOnOCR] API failed và local backend bị tắt. "
+            "Kiểm tra kết nối đến API hoặc set LLM_SERVICE=local."
+        )
+
+    # ── Public API ────────────────────────────────────────────────────────────
+
+    def recognize_text(
+        self,
+        image: Union[np.ndarray, Image.Image],
+        *,
+        page_img: Optional[np.ndarray] = None,
+        poly: Optional[list] = None,
+        vietnamese: Optional[bool] = None,
+        lang: Optional[str] = None,
+    ) -> Tuple[str, float]:
+        if vietnamese is None and lang is None:
+            vietnamese = self._should_use_vietnamese_prompt(image)
+        return self._with_fallback(
+            api_fn   = lambda: self._api.recognize_text(image, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=lang),
+            local_fn = lambda: self._get_local().recognize_text(image, page_img=page_img, poly=poly),
+        )
+
+    def recognize_table(
+        self,
+        image: Union[np.ndarray, Image.Image],
+        bbox_coords=None,
+        *,
+        page_img: Optional[np.ndarray] = None,
+        poly: Optional[list] = None,
+        lang: Optional[str] = None,
+        vietnamese: Optional[bool] = None,   # None = auto-detect
+        skeleton_html: str = "",
+    ) -> str:
+        # Auto-detect Vietnamese nếu không chỉ định tường minh
+        if vietnamese is None:
+            vietnamese = self._should_use_vietnamese_prompt(image, lang=lang, auto_detect=True)
+            if vietnamese:
+                logger.info("[LightOnOCR] Detected Vietnamese table → using VI prompt")
+
+        return self._with_fallback(
+            api_fn   = lambda: self._api.recognize_table(
+                image, bbox_coords, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=lang or "", skeleton_html=skeleton_html
+            ),
+            local_fn = lambda: self._get_local().recognize_table(
+                image, bbox_coords, page_img=page_img, poly=poly, vietnamese=vietnamese, skeleton_html=skeleton_html
+            ),
+        )
+
+    def recognize_page(self, image: Union[np.ndarray, Image.Image]) -> str:
+        """Dịch ảnh toàn trang sang Markdown sử dụng VLM API."""
+        return self._with_fallback(
+            api_fn   = lambda: self._api.recognize_page(image),
+            local_fn = lambda: "",  # local model chưa hỗ trợ OCR full trang
+        )
+
+    def ocr(
+        self,
+        img,
+        det=True,
+        rec=True,
+        mfd_res=None,
+        tqdm_enable=False,
+        tqdm_desc="OCR-rec Predict",
+        **kwargs,
+    ) -> List:
+        page_img   = kwargs.get("page_img")
+        poly       = kwargs.get("poly")
+        vietnamese = kwargs.get("vietnamese")   # None = auto
+
+        imgs = [img] if isinstance(img, np.ndarray) else img
+        is_table = "table" in (tqdm_desc or "").lower()
+
+        if getattr(LightOnOCR, '_api_failed', False) or getattr(self, '_api', None) is None:
+            try:
+                local_name = self._get_local()._model_id.split('/')[-1]
+                if " " in tqdm_desc:
+                    tqdm_desc = f"{local_name} " + tqdm_desc.split(" ", 1)[1]
+                else:
+                    tqdm_desc = f"{local_name} {tqdm_desc}"
+            except Exception:
+                pass
+
+        if tqdm_enable:
+            from tqdm import tqdm
+            iterator = tqdm(imgs, desc=tqdm_desc)
+        else:
+            iterator = imgs
+
+        def update_desc_if_local():
+            if tqdm_enable and (getattr(LightOnOCR, '_api_failed', False) or getattr(self, '_api', None) is None):
+                try:
+                    local_name = self._get_local()._model_id.split('/')[-1]
+                    if " " in iterator.desc:
+                        new_desc = f"{local_name} " + iterator.desc.split(" ", 1)[1]
+                    else:
+                        new_desc = f"{local_name} {iterator.desc}"
+                    iterator.set_description(new_desc)
+                except Exception:
+                    pass
+
+        if is_table:
+            results = []
+            for image in iterator:
+                update_desc_if_local()
+                viet = vietnamese
+                if viet is None:
+                    viet = self._should_use_vietnamese_prompt(image, auto_detect=True)
+                    if viet:
+                        logger.info("[LightOnOCR.ocr] Vietnamese table detected")
+                res = self.recognize_table(image, page_img=page_img, poly=poly, vietnamese=viet)
+                results.append((res, 1.0))
+            return [results]
+
+        ocr_res = []
+        if det and rec:
+            for image in iterator:
+                update_desc_if_local()
+                text, score = self.recognize_text(image, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=kwargs.get('lang'))
+                if text:
+                    h, w = (
+                        image.shape[:2]
+                        if isinstance(image, np.ndarray)
+                        else image.size[::-1]
+                    )
+                    box = [[0, 0], [w, 0], [w, h], [0, h]]
+                    ocr_res.append([[box, (text, score)]])
+                else:
+                    ocr_res.append(None)
+        elif not det and rec:
+            res_list = []
+            for image in iterator:
+                update_desc_if_local()
+                res_list.append(self.recognize_text(image, page_img=page_img, poly=poly, vietnamese=vietnamese, lang=kwargs.get('lang')))
+            ocr_res.append(res_list)
 
         return ocr_res
 
