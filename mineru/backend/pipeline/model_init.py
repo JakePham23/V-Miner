@@ -259,6 +259,22 @@ class AtomModelSingleton:
                 cls._instance = super().__new__(cls)
         return cls._instance
 
+    @classmethod
+    def offload_models(cls):
+        """Giải phóng hoàn toàn các mô hình khỏi RAM/VRAM để tiết kiệm bộ nhớ."""
+        import gc
+        with cls._lock:
+            cls._models.clear()
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                    torch.mps.empty_cache()
+            except ImportError:
+                pass
+
     def get_atom_model(self, atom_model_name: str, **kwargs):
 
         lang = kwargs.get('lang', None)
@@ -485,6 +501,22 @@ class HybridModelSingleton:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
         return cls._instance
+
+    @classmethod
+    def offload_models(cls):
+        """Giải phóng hoàn toàn các mô hình khỏi RAM/VRAM để tiết kiệm bộ nhớ."""
+        import gc
+        with cls._lock:
+            cls._models.clear()
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                    torch.mps.empty_cache()
+            except ImportError:
+                pass
 
     def get_model(
         self,
