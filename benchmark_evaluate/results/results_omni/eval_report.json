@@ -1,0 +1,254 @@
+{
+  "docstructbench_dianzishu_zhongwenzaixian-o.O-61569294.pdf_128": {
+    "traditional": {
+      "cer": 0.17790262172284643,
+      "wer": 0.7142857142857143,
+      "edit_distance_sim": 0.8220973782771536,
+      "bleu": 0.17788616890710254,
+      "meteor": 0.38999264164827085,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "notes_f7f010b78016aeebd76e56d9283eb67f_49": {
+    "traditional": {
+      "cer": 0.0783132530120482,
+      "wer": 0.47619047619047616,
+      "edit_distance_sim": 0.9216867469879518,
+      "bleu": 0.4696603226504878,
+      "meteor": 0.7415650279047318,
+      "teds_struct": 0.39622641509433965,
+      "teds_content": 0.2823838111573961,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "notes_1ba14cb325bc448f7201b20502ecf2b5_15": {
+    "traditional": {
+      "cer": 0.2759493670886076,
+      "wer": 0.9629629629629629,
+      "edit_distance_sim": 0.7572383073496659,
+      "bleu": 0.19319516592331426,
+      "meteor": 0.4043776026430808,
+      "teds_struct": 0.8148148148148149,
+      "teds_content": 0.8055555555555556,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "docstructbench_llm-raw-scihub-o.O-j.physletb.2004.06.101.pdf_3": {
+    "traditional": {
+      "cer": 0.19056122448979593,
+      "wer": 1.0510805500982319,
+      "edit_distance_sim": 0.8208203406092588,
+      "bleu": 0.6536953457186168,
+      "meteor": 0.5978681747991768,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "newspaper_1cddf9d22ca549f3a86cf1512a3110cc_1": {
+    "traditional": {
+      "cer": 0.12700910419242442,
+      "wer": 0.816793893129771,
+      "edit_distance_sim": 0.8750967171438045,
+      "bleu": 0.23676654523070553,
+      "meteor": 0.3799624174156498,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "yanbaopptmerge_0c79d327060dbf9f1582d03c235dadb039533a19091d2c0d24f2ad95d267f79b.pdf_2": {
+    "traditional": {
+      "cer": 0.005323868677905945,
+      "wer": 0.2222222222222222,
+      "edit_distance_sim": 0.9946902654867257,
+      "bleu": 0.6775939999489281,
+      "meteor": 0.8300000000000002,
+      "teds_struct": 0.8387096774193549,
+      "teds_content": 0.8311262026032824,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "newspaper_5e266dfd9c498cab274e12a7b4a75755_4": {
+    "traditional": {
+      "cer": 0.016505148394912173,
+      "wer": 0.09327983951855567,
+      "edit_distance_sim": 0.9835397160978556,
+      "bleu": 0.8416205007108509,
+      "meteor": 0.8986139605813125,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.05.085.pdf_4": {
+    "traditional": {
+      "cer": 0.05185825410544512,
+      "wer": 0.1510989010989011,
+      "edit_distance_sim": 0.9491094147582697,
+      "bleu": 0.7755982560891713,
+      "meteor": 0.895068853808411,
+      "teds_struct": 0.9222222222222223,
+      "teds_content": 0.6925517429193899,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "jiaocaineedrop_jiaocai_needrop_en_1898": {
+    "traditional": {
+      "cer": 0.014864864864864866,
+      "wer": 0.05714285714285714,
+      "edit_distance_sim": 0.9852348993288591,
+      "bleu": 0.879169455691215,
+      "meteor": 0.9774382152687239,
+      "teds_struct": 0.8932038834951457,
+      "teds_content": 0.8932038834951457,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "docstructbench_dianzishu_zhongwenzaixian-o.O-61520814.pdf_185": {
+    "traditional": {
+      "cer": 0.2657563025210084,
+      "wer": 0.921875,
+      "edit_distance_sim": 0.7595057034220533,
+      "bleu": 0.05496810696348325,
+      "meteor": 0.42201014853924074,
+      "teds_struct": 0.679245283018868,
+      "teds_content": 0.6707547169811321,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "eastmoney_62b4149b1612ce28d20f26cd5c5b2e18f80b26fca6e4452e090376a2fe72eae3.pdf_0": {
+    "traditional": {
+      "cer": 0.37549407114624506,
+      "wer": 0.7786259541984732,
+      "edit_distance_sim": 0.6245059288537549,
+      "bleu": 0.17501175042681907,
+      "meteor": 0.360085248219573,
+      "teds_struct": 0.3016994266994267,
+      "teds_content": 0.23094333406833406,
+      "table_match_count": 2,
+      "gt_table_count": 2,
+      "pred_table_count": 4
+    }
+  },
+  "docstructbench_dianzishu_zhongwenzaixian-o.O-61522235.pdf_170": {
+    "traditional": {
+      "cer": 0.29906542056074764,
+      "wer": 0.8148148148148148,
+      "edit_distance_sim": 0.7213352685050798,
+      "bleu": 0.1880432145713739,
+      "meteor": 0.5906665244303826,
+      "teds_struct": 0.8653846153846154,
+      "teds_content": 0.8540903540903542,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "jiaocaineedrop_jiaocai_needrop_en_3361": {
+    "traditional": {
+      "cer": 0.3314121037463977,
+      "wer": 0.6534653465346535,
+      "edit_distance_sim": 0.6685878962536023,
+      "bleu": 0.18666860149748243,
+      "meteor": 0.34961015502806375,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "yanbaopptmerge_yanbaoPPT_145": {
+    "traditional": {
+      "cer": 0.07453416149068323,
+      "wer": 0.8,
+      "edit_distance_sim": 0.927710843373494,
+      "bleu": 0.612957497932821,
+      "meteor": 0.8961854460093898,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "docstructbench_dianzishu_zhongwenzaixian-o.O-60599898.pdf_30": {
+    "traditional": {
+      "cer": 0.012839506172839505,
+      "wer": 0.8260869565217391,
+      "edit_distance_sim": 0.9871604938271605,
+      "bleu": 0.9178325925479021,
+      "meteor": 0.9426884509571071,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "jiaocaineedrop_Chapter9.pdf_46": {
+    "traditional": {
+      "cer": 0.1867638810992709,
+      "wer": 0.35240963855421686,
+      "edit_distance_sim": 0.8132361189007291,
+      "bleu": 0.805701175285942,
+      "meteor": 0.8537981209796037,
+      "teds_struct": 0.85,
+      "teds_content": 0.85,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5": {
+    "traditional": {
+      "cer": 0.32229658330398026,
+      "wer": 1.3713592233009708,
+      "edit_distance_sim": 0.6928499496475327,
+      "bleu": 0.47531793640748293,
+      "meteor": 0.5349822839589412,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  },
+  "yanbaopptmerge_SE05.pdf_7": {
+    "traditional": {
+      "cer": 0.07042253521126761,
+      "wer": 0.15384615384615385,
+      "edit_distance_sim": 0.9295774647887324,
+      "bleu": 0.6482083105928259,
+      "meteor": 0.8720973280609631,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 0,
+      "gt_table_count": 0,
+      "pred_table_count": 0
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "CTDT_Khoa_2024_19Sep2024_CNTN": {
+    "traditional": {
+      "cer": 0.2781384200539299,
+      "wer": 0.25328147788040833,
+      "edit_distance_sim": 0.7734667317390597,
+      "bleu": 0.7086887317319216,
+      "meteor": 0.7961532821813978,
+      "teds_struct": 0.7410855575034546,
+      "teds_content": 0.7084524657154972,
+      "table_match_count": 16,
+      "gt_table_count": 16,
+      "pred_table_count": 17
+    }
+  },
+  "CTDT_Khoa_2024_19Sep2024_TTNT": {
+    "traditional": {
+      "cer": 0.22395523276580545,
+      "wer": 0.24060150375939848,
+      "edit_distance_sim": 0.8078062736282824,
+      "bleu": 0.7047838043075282,
+      "meteor": 0.8009482907936606,
+      "teds_struct": 0.9334420215123304,
+      "teds_content": 0.9081130906417632,
+      "table_match_count": 18,
+      "gt_table_count": 18,
+      "pred_table_count": 18
+    }
+  },
+  "CTDT_Khoa_2024_18Sep2024_CNTTin": {
+    "traditional": {
+      "cer": 0.2523131672597865,
+      "wer": 0.22992540587977184,
+      "edit_distance_sim": 0.7896610546614256,
+      "bleu": 0.7035940215399831,
+      "meteor": 0.7850774565210595,
+      "teds_struct": 0.541398354214027,
+      "teds_content": 0.5122212273987229,
+      "table_match_count": 25,
+      "gt_table_count": 25,
+      "pred_table_count": 33
+    }
+  },
+  "CTDT_Khoa_CNTT_K2024_HTTT": {
+    "traditional": {
+      "cer": 0.8118421052631579,
+      "wer": 0.5433618843683083,
+      "edit_distance_sim": 0.4998129209279122,
+      "bleu": 0.30790136267797097,
+      "meteor": 0.7111028016006997,
+      "teds_struct": 0.6454006046108486,
+      "teds_content": 0.5918656675643084,
+      "table_match_count": 20,
+      "gt_table_count": 20,
+      "pred_table_count": 20
+    }
+  },
+  "CTDT_Khoa_2024_18Sep2024_KHMT": {
+    "traditional": {
+      "cer": 0.13178435287711018,
+      "wer": 0.13626576438019072,
+      "edit_distance_sim": 0.8718069452619188,
+      "bleu": 0.7862131865634991,
+      "meteor": 0.8177460443151547,
+      "teds_struct": 0.7135322337695031,
+      "teds_content": 0.6818421527521675,
+      "table_match_count": 35,
+      "gt_table_count": 35,
+      "pred_table_count": 38
+    }
+  },
+  "CTDT_Khoa_2024_KTPM": {
+    "traditional": {
+      "cer": 0.22949265054528212,
+      "wer": 0.26036866359447003,
+      "edit_distance_sim": 0.7917383820998278,
+      "bleu": 0.7224366924666202,
+      "meteor": 0.7554403857676524,
+      "teds_struct": 0.5986128936295433,
+      "teds_content": 0.5657488610883634,
+      "table_match_count": 17,
+      "gt_table_count": 17,
+      "pred_table_count": 19
+    }
+  }
+}

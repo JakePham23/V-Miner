@@ -1,0 +1,114 @@
+{
+  "CTDT_Khoa_2024_19Sep2024_CNTN": {
+    "traditional": {
+      "cer": 0.5932288025566763,
+      "wer": 0.1584832280019446,
+      "edit_distance_sim": 0.6096471052112769,
+      "bleu": 0.8246673610890868,
+      "meteor": 0.7957859396586489,
+      "teds_struct": 0.6296538382699819,
+      "teds_content": 0.6127207612193644,
+      "table_match_count": 16,
+      "gt_table_count": 16,
+      "pred_table_count": 18
+    }
+  },
+  "5_1": {
+    "traditional": {
+      "cer": 0.0,
+      "wer": 0.0,
+      "edit_distance_sim": 1.0,
+      "bleu": 1.0,
+      "meteor": 0.999958905235473,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "1": {
+    "traditional": {
+      "cer": 0.0,
+      "wer": 0.0,
+      "edit_distance_sim": 1.0,
+      "bleu": 0.5623413251903491,
+      "meteor": 0.9814814814814815,
+      "teds_struct": 1.0,
+      "teds_content": 1.0,
+      "table_match_count": 1,
+      "gt_table_count": 1,
+      "pred_table_count": 1
+    }
+  },
+  "CTDT_Khoa_2024_19Sep2024_TTNT": {
+    "traditional": {
+      "cer": 0.7038933206334087,
+      "wer": 0.7588201272411799,
+      "edit_distance_sim": 0.5577498503889886,
+      "bleu": 0.554293650363108,
+      "meteor": 0.7496953481372302,
+      "teds_struct": 0.5972167122471529,
+      "teds_content": 0.5505571693062723,
+      "table_match_count": 18,
+      "gt_table_count": 18,
+      "pred_table_count": 20
+    }
+  },
+  "CTDT_Khoa_2024_18Sep2024_CNTTin": {
+    "traditional": {
+      "cer": 0.22491103202846974,
+      "wer": 0.22465993856954805,
+      "edit_distance_sim": 0.8062092755845152,
+      "bleu": 0.7764249420091097,
+      "meteor": 0.7687559746436852,
+      "teds_struct": 0.5411767903707563,
+      "teds_content": 0.494204387180122,
+      "table_match_count": 25,
+      "gt_table_count": 25,
+      "pred_table_count": 27
+    }
+  },
+  "CTDT_Khoa_CNTT_K2024_HTTT": {
+    "traditional": {
+      "cer": 0.1715587044534413,
+      "wer": 0.12740899357601712,
+      "edit_distance_sim": 0.8284412955465588,
+      "bleu": 0.839953387954883,
+      "meteor": 0.8550851674162057,
+      "teds_struct": 0.7081867356849203,
+      "teds_content": 0.6711389813922597,
+      "table_match_count": 19,
+      "gt_table_count": 20,
+      "pred_table_count": 19
+    }
+  },
+  "CTDT_Khoa_2024_18Sep2024_KHMT": {
+    "traditional": {
+      "cer": 0.10249894112664125,
+      "wer": 0.09627806828668102,
+      "edit_distance_sim": 0.8975010588733587,
+      "bleu": 0.8728579857830296,
+      "meteor": 0.8401573523967764,
+      "teds_struct": 0.7088124179249047,
+      "teds_content": 0.6525962355913987,
+      "table_match_count": 35,
+      "gt_table_count": 35,
+      "pred_table_count": 35
+    }
+  },
+  "CTDT_Khoa_2024_KTPM": {
+    "traditional": {
+      "cer": 0.21408250355618777,
+      "wer": 0.23214285714285715,
+      "edit_distance_sim": 0.7984824815889311,
+      "bleu": 0.7848386988126057,
+      "meteor": 0.7830967130145285,
+      "teds_struct": 0.6741627816770797,
+      "teds_content": 0.6333820782467573,
+      "table_match_count": 17,
+      "gt_table_count": 17,
+      "pred_table_count": 19
+    }
+  }
+}

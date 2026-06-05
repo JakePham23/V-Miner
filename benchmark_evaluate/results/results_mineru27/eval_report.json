@@ -1,0 +1,16 @@
+{
+  "CTDT_Khoa_CNTT_K2024_HTTT": {
+    "traditional": {
+      "cer": 0.2889676113360324,
+      "wer": 0.7853319057815846,
+      "edit_distance_sim": 0.7110323886639676,
+      "bleu": 0.1257470059205676,
+      "meteor": 0.26819611676151267,
+      "teds_struct": 0.7307008531831408,
+      "teds_content": 0.6541066893927321,
+      "table_match_count": 18,
+      "gt_table_count": 20,
+      "pred_table_count": 18
+    }
+  }
+}

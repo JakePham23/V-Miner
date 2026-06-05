@@ -1,0 +1,6 @@
+jiwer 
+rapidfuzz 
+markdown 
+nltk 
+table_recognition_metric 
+tabulate
